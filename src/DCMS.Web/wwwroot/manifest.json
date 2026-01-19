@@ -1,0 +1,22 @@
+{
+    "name": "DCMS Hub Mobile",
+    "short_name": "DCMS Hub",
+    "description": "Digital Correspondence & Meeting System Mobile Viewer",
+    "start_url": "/Mobile",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#008751",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "logo.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

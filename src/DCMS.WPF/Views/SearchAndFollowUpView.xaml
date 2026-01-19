@@ -1,0 +1,236 @@
+<UserControl x:Class="DCMS.WPF.Views.SearchAndFollowUpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DCMS.WPF.Views"
+             xmlns:enums="clr-namespace:DCMS.Domain.Enums;assembly=DCMS.Domain"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:filters="clr-namespace:DCMS.WPF.Views.SearchFilters"
+             xmlns:components="clr-namespace:DCMS.WPF.Views.SearchComponents"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1400"
+             FlowDirection="RightToLeft"
+             Background="#F5F5F5">
+    
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        
+        <ObjectDataProvider x:Key="CorrespondenceStatusEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="enums:CorrespondenceStatus"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="SearchRecordTypeEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="enums:SearchRecordType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <!-- Modern Styles (Keeping here for non-filter elements if needed, though mostly moved) -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="#DDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="ModernComboBox" TargetType="ComboBox">
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderBrush" Value="#DDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height" Value="36"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header & Type Selector -->
+            <RowDefinition Height="Auto"/> <!-- Filters -->
+            <RowDefinition Height="Auto"/> <!-- Transferred To Filter -->
+            <RowDefinition Height="*"/>    <!-- Results Grid -->
+            <RowDefinition Height="Auto"/> <!-- Action Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Header & Search Type Selector -->
+        <Border Grid.Row="0" Background="White" Padding="20,15" Margin="0,0,0,15" CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="🔍 " FontSize="20" VerticalAlignment="Center"/>
+                    <TextBlock Text="البحث والمتابعة" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Foreground="#2196F3"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <TextBlock Text="نوع المراسلة:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                    <ComboBox x:Name="cmbRecordType" SelectedValue="{Binding SelectedRecordType}" SelectedValuePath="Tag"
+                              Width="220" Style="{StaticResource ModernComboBox}">
+                        <ComboBoxItem Content="بوسطة وارد" Tag="{x:Static enums:SearchRecordType.Posta}"/>
+                        <ComboBoxItem Content="إيميل" Tag="{x:Static enums:SearchRecordType.Email}"/>
+                        <ComboBoxItem Content="عقود" Tag="{x:Static enums:SearchRecordType.Contract}"/>
+                        <ComboBoxItem Content="تفويضات" Tag="{x:Static enums:SearchRecordType.Delegation}"/>
+                        <ComboBoxItem Content="عهدة" Tag="{x:Static enums:SearchRecordType.Custody}"/>
+                        <ComboBoxItem Content="مأموريات" Tag="{x:Static enums:SearchRecordType.Mission}"/>
+                        <ComboBoxItem Content="طلبات" Tag="{x:Static enums:SearchRecordType.Request}"/>
+                        <ComboBoxItem Content="شكاوى" Tag="{x:Static enums:SearchRecordType.Complaint}"/>
+                        <ComboBoxItem Content="صادر" Tag="{x:Static enums:SearchRecordType.Outbound}"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Dynamic Filters Section -->
+        <Border Grid.Row="1" Background="White" Padding="20" Margin="0,0,0,15" CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            
+            <!-- ContentControl with dynamic control type selection -->
+            <ContentControl Content="{Binding}">
+                <ContentControl.Style>
+                    <Style TargetType="ContentControl">
+                        <Setter Property="ContentTemplate">
+                            <Setter.Value>
+                                <DataTemplate>
+                                    <filters:DefaultFiltersControl/>
+                                </DataTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <!-- Outbound -->
+                            <DataTrigger Binding="{Binding SelectedRecordType}" Value="{x:Static enums:SearchRecordType.Outbound}">
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <filters:OutboundFiltersControl/>
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                            
+                            <!-- Inbound Categories -->
+                            <DataTrigger Binding="{Binding SelectedRecordType}" Value="{x:Static enums:SearchRecordType.Posta}">
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <filters:PostaFiltersControl/>
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedRecordType}" Value="{x:Static enums:SearchRecordType.Email}">
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <filters:EmailFiltersControl/>
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedRecordType}" Value="{x:Static enums:SearchRecordType.Contract}">
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <filters:ContractFiltersControl/>
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ContentControl.Style>
+            </ContentControl>
+        </Border>
+
+        <!-- Year Filter & Transferred To Filter Section -->
+        <Border Grid.Row="2" Background="White" Padding="15,10" Margin="0,0,0,10" CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="6" ShadowDepth="1" Opacity="0.2"/>
+            </Border.Effect>
+            
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Year Filter Row -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="📅 السنة:" VerticalAlignment="Center" 
+                               Margin="0,0,15,0" FontWeight="SemiBold" FontSize="14"/>
+                    <ComboBox Grid.Column="1" 
+                              ItemsSource="{Binding AvailableYears}"
+                              SelectedItem="{Binding SelectedYear}"
+                              Style="{StaticResource ModernComboBox}"
+                              ToolTip="اختر السنة لعرض مراسلات تلك السنة فقط">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding}" Value="0">
+                                                    <Setter Property="Text" Value="جميع السنوات"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Grid.Column="2" Text="🔄 المحول إليه:" VerticalAlignment="Center" 
+                               Margin="30,0,15,0" FontWeight="SemiBold" FontSize="14"/>
+                    <ComboBox Grid.Column="3" 
+                              ItemsSource="{Binding AvailableEngineers}"
+                              SelectedValue="{Binding SearchTransferredTo}"
+                              SelectedValuePath="FullName"
+                              DisplayMemberPath="FullName"
+                              Style="{StaticResource ModernComboBox}"
+                              IsEditable="True"
+                              IsTextSearchEnabled="True"
+                              ToolTip="البحث عن جميع الموضوعات المحولة حالياً لمهندس معين (غير المغلقة)"/>
+                    
+                    <TextBlock Grid.Column="4" Text="(جميع السنوات محددة افتراضياً)" 
+                               VerticalAlignment="Center" Margin="15,0,0,0" 
+                               Foreground="#666" FontSize="12" FontStyle="Italic"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Results DataGrid -->
+        <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="0">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            <components:SearchResultsControl/>
+        </Border>
+
+
+        <!-- Action Buttons -->
+        <components:SearchFooterControl Grid.Row="4" Margin="0,15,0,0"/>
+
+
+    </Grid>
+</UserControl>

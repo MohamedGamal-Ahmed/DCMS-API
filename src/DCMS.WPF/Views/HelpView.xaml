@@ -1,0 +1,129 @@
+<UserControl x:Class="DCMS.WPF.Views.HelpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000"
+             FlowDirection="RightToLeft">
+    
+    <Grid Background="#F5F7FA">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="White" Padding="30,20" Margin="20,20,20,0" CornerRadius="10">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            <StackPanel>
+                <TextBlock Text="📘 دليل مستخدم نظام DCMS" 
+                           FontSize="28" FontWeight="Bold" 
+                           Foreground="#2C3E50"/>
+                <TextBlock Text="نظام إدارة المراسلات والوثائق - الإصدار 3.0" 
+                           FontSize="14" Foreground="#7F8C8D" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Table of Contents -->
+            <Border Grid.Column="0" Background="White" CornerRadius="10" Margin="0,0,10,0" Padding="15">
+                <Border.Effect>
+                    <DropShadowEffect Color="#E0E0E0" BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="📑 فهرس المحتويات" FontSize="16" FontWeight="Bold" 
+                               Foreground="#2C3E50" Margin="0,0,0,15"/>
+                    
+                    <ListBox x:Name="lstSections" SelectionChanged="LstSections_SelectionChanged"
+                             BorderThickness="0" Background="Transparent">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="10,8"/>
+                                <Setter Property="Margin" Value="0,2"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" 
+                                                    CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3498DB"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#ECF0F1"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        
+                        <ListBoxItem Tag="intro">1. مقدمة ومتطلبات التشغيل</ListBoxItem>
+                        <ListBoxItem Tag="login">2. تسجيل الدخول</ListBoxItem>
+                        <ListBoxItem Tag="dashboard">3. لوحة التحكم</ListBoxItem>
+                        <ListBoxItem Tag="inbound">4. إدارة الوارد</ListBoxItem>
+                        <ListBoxItem Tag="outbound">5. إدارة الصادر</ListBoxItem>
+                        <ListBoxItem Tag="search">6. البحث والمتابعة</ListBoxItem>
+                        <ListBoxItem Tag="meetings">7. جدول الاجتماعات</ListBoxItem>
+                        <ListBoxItem Tag="users">8. إدارة المستخدمين</ListBoxItem>
+                        <ListBoxItem Tag="audit">9. سجل المراجعة</ListBoxItem>
+                        <ListBoxItem Tag="backup">10. النسخ الاحتياطي</ListBoxItem>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <!-- Content Area -->
+            <Border Grid.Column="1" Background="White" CornerRadius="10" Padding="25">
+                <Border.Effect>
+                    <DropShadowEffect Color="#E0E0E0" BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                </Border.Effect>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="stkContent">
+                        <!-- Default welcome content -->
+                        <TextBlock Text="مرحباً بك في دليل المستخدم" FontSize="24" FontWeight="Bold" 
+                                   Foreground="#2C3E50" Margin="0,0,0,20"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="#34495E" LineHeight="28">
+                            اختر قسماً من القائمة على اليسار لعرض محتواه.
+                            <LineBreak/><LineBreak/>
+                            <Bold>أقسام الدليل:</Bold>
+                            <LineBreak/>
+                            • مقدمة ومتطلبات التشغيل
+                            <LineBreak/>
+                            • تسجيل الدخول
+                            <LineBreak/>
+                            • لوحة التحكم
+                            <LineBreak/>
+                            • إدارة الوارد (6 أنواع)
+                            <LineBreak/>
+                            • إدارة الصادر
+                            <LineBreak/>
+                            • البحث والمتابعة
+                            <LineBreak/>
+                            • جدول الاجتماعات
+                            <LineBreak/>
+                            • إدارة المستخدمين
+                            <LineBreak/>
+                            • سجل المراجعة
+                            <LineBreak/>
+                            • النسخ الاحتياطي
+                        </TextBlock>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

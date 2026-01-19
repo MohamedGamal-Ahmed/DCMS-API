@@ -1,0 +1,125 @@
+<UserControl x:Class="DCMS.WPF.Views.EngineerManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DCMS.WPF.Views"
+             xmlns:components="clr-namespace:DCMS.WPF.Views.Components"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="900"
+             FlowDirection="RightToLeft">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="Auto"/> <!-- Toolbar -->
+            <RowDefinition Height="*"/>    <!-- DataGrid -->
+            <RowDefinition Height="Auto"/> <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="إدارة المهندسين" FontSize="24" FontWeight="Bold" Foreground="#333"/>
+            <TextBlock Text="إضافة وتعديل بيانات المهندسين الداخليين والجهات الخارجية" Foreground="#666" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Filters -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <CheckBox Content="عرض المهندسين المسؤولين (داخلي)" IsChecked="{Binding ShowInternal}" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                <CheckBox Content="عرض الجهات الخارجية (محول إليهم)" IsChecked="{Binding ShowExternal}" Margin="0,0,15,0" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Search -->
+            <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                     Margin="20,0" Padding="5" VerticalContentAlignment="Center"
+                     Tag="بحث عن اسم المهندس..."/>
+
+            <!-- Actions -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Command="{Binding AddCommand}" CommandParameter="Internal" Content="➕ مهندس مسؤول" Padding="10,5" Margin="0,0,5,0" Background="#2196F3" Foreground="White" BorderThickness="0"/>
+                <Button Command="{Binding AddCommand}" CommandParameter="External" Content="➕ جهة خارجية" Padding="10,5" Margin="0,0,5,0" Background="#9C27B0" Foreground="White" BorderThickness="0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- DataGrid -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding EngineersView}" AutoGenerateColumns="False" 
+                  CanUserAddRows="False" CanUserDeleteRows="False"
+                  BorderThickness="1" BorderBrush="#DDD" Background="White"
+                  GridLinesVisibility="Horizontal" RowHeaderWidth="0">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="المعرف" Binding="{Binding Id}" IsReadOnly="True" Width="60"/>
+                
+                <DataGridTextColumn Header="الاسم" Binding="{Binding FullName, UpdateSourceTrigger=PropertyChanged}" Width="*">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Padding" Value="5"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.EditingElementStyle>
+                        <Style TargetType="TextBox">
+                            <Setter Property="Padding" Value="5"/>
+                        </Style>
+                    </DataGridTextColumn.EditingElementStyle>
+                </DataGridTextColumn>
+
+                <DataGridCheckBoxColumn Header="مهندس مسؤول؟" Binding="{Binding IsResponsibleEngineer, UpdateSourceTrigger=PropertyChanged}" Width="120"/>
+                <DataGridCheckBoxColumn Header="نَشِط؟" Binding="{Binding IsActive, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+
+                <DataGridTemplateColumn Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                    CommandParameter="{Binding}"
+                                    Content="تعطيل"
+                                    Background="#FFEBEE" Foreground="#D32F2F" BorderBrush="#D32F2F" BorderThickness="1"
+                                    Padding="10,2" Margin="5"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Footer -->
+        <Grid Grid.Row="3" Margin="0,15,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <StatusBar Background="Transparent" Grid.Column="0">
+                <StatusBarItem>
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="#666"/>
+                </StatusBarItem>
+            </StatusBar>
+            
+            <Button Grid.Column="1" Command="{Binding SaveCommand}" Content="💾 حفظ التغييرات" 
+                    Background="#4CAF50" Foreground="White" FontSize="14" FontWeight="Bold"
+                    Padding="20,8" BorderThickness="0">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="4"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </Grid>
+
+        <!-- Loading Overlay -->
+        <components:SkeletonLoaderView Grid.Row="2" 
+                                       Background="White"
+                                       RowCount="12"
+                                       Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+    </Grid>
+</UserControl>

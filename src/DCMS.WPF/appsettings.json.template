@@ -1,0 +1,16 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "YOUR_CONNECTION_STRING_HERE"
+  },
+  "Groq": {
+    "ApiKey": "YOUR_GROQ_KEY_HERE",
+    "ApiKey2": "YOUR_GROQ_KEY_2_HERE",
+    "ApiKey3": "YOUR_GROQ_KEY_3_HERE"
+  },
+  "DeepSeek": {
+    "ApiKey": "YOUR_DEEPSEEK_KEY_HERE"
+  },
+  "Telegram": {
+    "BotToken": "YOUR_BOT_TOKEN_HERE"
+  }
+}

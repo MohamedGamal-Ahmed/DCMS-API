@@ -1,0 +1,313 @@
+<UserControl x:Class="DCMS.WPF.Views.MeetingAgendaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DCMS.WPF.Views"
+             xmlns:converters="clr-namespace:DCMS.WPF.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200"
+             FlowDirection="RightToLeft">
+
+    <UserControl.Resources>
+        <converters:DateTimeToLocalConverter x:Key="DateTimeToLocalConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/> <!-- Calendar -->
+            <ColumnDefinition Width="1*"/> <!-- Details/List -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Calendar Section -->
+        <Border Grid.Column="0" Background="White" CornerRadius="10" Margin="0,0,20,0" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect Color="#DDD" BlurRadius="10" ShadowDepth="2"/>
+            </Border.Effect>
+            
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Header -->
+                    <RowDefinition Height="Auto"/> <!-- Days of Week -->
+                    <RowDefinition Height="*"/>    <!-- Calendar Grid -->
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Grid.Row="0" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Previous Month (Right Side in RTL) -->
+                    <Button Grid.Column="0" Command="{Binding PreviousMonthCommand}" Width="40" Height="30" ToolTip="الشهر السابق">
+                        <TextBlock Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Button>
+                    
+                    <TextBlock Grid.Column="1" 
+                               Text="{Binding CurrentMonthYear}" 
+                               FontSize="24" FontWeight="Bold" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                    <!-- Next Month (Left Side in RTL) -->
+                    <Button Grid.Column="2" Command="{Binding NextMonthCommand}" Width="40" Height="30" ToolTip="الشهر التالي">
+                        <TextBlock Text="◀" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Button>
+                </Grid>
+
+                <!-- Days of Week -->
+                <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,10">
+                    <TextBlock Text="الأحد" HorizontalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+                    <TextBlock Text="الاثنين" HorizontalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+                    <TextBlock Text="الثلاثاء" HorizontalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+                    <TextBlock Text="الأربعاء" HorizontalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+                    <TextBlock Text="الخميس" HorizontalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+                    <TextBlock Text="الجمعة" HorizontalAlignment="Center" FontWeight="Bold" Foreground="Red" FontSize="14"/>
+                    <TextBlock Text="السبت" HorizontalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+                </UniformGrid>
+
+                <!-- Calendar Grid -->
+                <ItemsControl Grid.Row="2" ItemsSource="{Binding DayViewModels}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="7" Rows="6"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding SelectCommand}" 
+                                    CommandParameter="{Binding Date}"
+                                    Margin="1"
+                                    Padding="0"
+                                    BorderThickness="0"
+                                    Background="Transparent">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border BorderBrush="#E0E0E0" BorderThickness="1" Padding="5">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCurrentMonth}" Value="False">
+                                                            <Setter Property="Background" Value="#F5F5F5"/>
+                                                            <Setter Property="Opacity" Value="0.5"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                            <Setter Property="Background" Value="#E3F2FD"/>
+                                                            <Setter Property="BorderBrush" Value="#2196F3"/>
+                                                            <Setter Property="BorderThickness" Value="2"/>
+                                                        </DataTrigger>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Background" Value="#F0F0F0"/>
+                                                            <Setter Property="Cursor" Value="Hand"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            
+                                            <StackPanel>
+                                                <!-- Day Number -->
+                                                <TextBlock Text="{Binding DayNumber}" 
+                                                           FontWeight="Bold" 
+                                                           FontSize="16"
+                                                           Margin="0,0,0,5">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#333"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#2196F3"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                
+                                                <!-- Meetings -->
+                                                <ItemsControl ItemsSource="{Binding Meetings}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="#4CAF50" 
+                                                                    CornerRadius="3" 
+                                                                    Padding="3" 
+                                                                    Margin="0,2">
+                                                                <TextBlock Text="{Binding Title}" 
+                                                                           FontSize="10" 
+                                                                           Foreground="White" 
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           ToolTip="{Binding Title}"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <!-- Sidebar Section -->
+        <Border Grid.Column="1" Background="White" CornerRadius="10" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect Color="#DDD" BlurRadius="10" ShadowDepth="2"/>
+            </Border.Effect>
+            
+            <StackPanel>
+                <TextBlock Text="أجندة الاجتماعات" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <Button Command="{Binding AddMeetingCommand}" 
+                            Content="➕ اجتماع جديد" 
+                            Height="40" 
+                            Width="120"
+                            Background="#4CAF50" 
+                            Foreground="White" 
+                            FontSize="14" 
+                            FontWeight="Bold"
+                            Margin="0,0,10,0"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+
+                    <Button Content="📄 تصدير التقرير ▾" 
+                            Height="40" 
+                            Width="120"
+                            Background="#2196F3" 
+                            Foreground="White" 
+                            FontSize="14" 
+                            FontWeight="Bold"
+                            Cursor="Hand"
+                            Click="ExportButton_Click"
+                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                        <Button.ContextMenu>
+                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                <MenuItem Header="أجندة اليوم" Command="{Binding ExportReportCommand}" CommandParameter="Today"/>
+                                <MenuItem Header="أجندة الأسبوع" Command="{Binding ExportReportCommand}" CommandParameter="Week"/>
+                                <MenuItem Header="أجندة الشهر" Command="{Binding ExportReportCommand}" CommandParameter="Month"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                </StackPanel>
+
+                <Separator Margin="0,0,0,20"/>
+
+                <TextBlock Text="اجتماعات اليوم" 
+                           FontSize="16" 
+                           FontWeight="Bold" 
+                           Foreground="#333"
+                           Margin="0,0,0,10"/>
+                
+                <TextBlock Text="{Binding SelectedDate, StringFormat='dd/MM/yyyy'}" 
+                           FontSize="14" 
+                           Foreground="#666"
+                           Margin="0,0,0,15"/>
+                
+                <!-- List of meetings -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="500">
+                    <ItemsControl ItemsSource="{Binding Meetings}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#EEE" BorderThickness="0,0,0,1" Padding="10" Margin="0,5">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <TextBlock Grid.Column="0" 
+                                                       Text="{Binding Title}" 
+                                                       FontWeight="SemiBold" 
+                                                       FontSize="14"
+                                                       TextWrapping="Wrap"/>
+                                            
+                                            <Button Grid.Column="1" 
+                                                    Content="🔗 دخول" 
+                                                    Command="{Binding DataContext.JoinMeetingCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                    CommandParameter="{Binding}"
+                                                    Background="#FFEB3B" 
+                                                    Foreground="#333"
+                                                    FontWeight="Bold"
+                                                    Padding="8,2"
+                                                    Cursor="Hand"
+                                                    Margin="0,0,5,0"
+                                                    ToolTip="انضمام للاجتماع أونلاين">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding OnlineMeetingLink}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding OnlineMeetingLink}" Value="">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                                <Button.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="3"/>
+                                                    </Style>
+                                                </Button.Resources>
+                                            </Button>
+                                            
+                                            <Button Grid.Column="2" 
+                                                    Content="✏️" 
+                                                    Command="{Binding DataContext.EditMeetingCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" 
+                                                    BorderThickness="0" 
+                                                    Foreground="#2196F3"
+                                                    Cursor="Hand"
+                                                    Margin="0,0,5,0"
+                                                    ToolTip="تعديل"/>
+                                            
+                                            <Button Grid.Column="3" 
+                                                    Content="❌" 
+                                                    Command="{Binding DataContext.DeleteMeetingCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" 
+                                                    BorderThickness="0" 
+                                                    Foreground="Red"
+                                                    Cursor="Hand"
+                                                    ToolTip="حذف"/>
+                                        </Grid>
+                                        
+                                        <TextBlock Text="{Binding StartDateTime, Converter={StaticResource DateTimeToLocalConverter}, StringFormat='dd/MM/yyyy HH:mm'}" 
+                                                   Foreground="DarkBlue" 
+                                                   FontWeight="Bold"
+                                                   FontSize="12" 
+                                                   Margin="0,5,0,0"/>
+                                        
+                                        <TextBlock Text="{Binding Location}" 
+                                                   Foreground="Gray" 
+                                                   FontSize="12" 
+                                                   Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

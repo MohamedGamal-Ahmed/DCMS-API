@@ -1,0 +1,246 @@
+<Window x:Class="DCMS.WPF.Views.EditFollowUpDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DCMS.WPF.Views"
+        xmlns:enums="clr-namespace:DCMS.Domain.Enums;assembly=DCMS.Domain"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        mc:Ignorable="d"
+        Title="تعديل ومتابعة" Height="750" Width="950"
+        WindowStartupLocation="CenterScreen"
+        FlowDirection="RightToLeft"
+        ResizeMode="CanResizeWithGrip"
+        Background="White">
+
+    <Window.Resources>
+        <ObjectDataProvider x:Key="CorrespondenceStatusEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="enums:CorrespondenceStatus"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/> <!-- Scrollable Content -->
+            <RowDefinition Height="Auto"/> <!-- Fixed Buttons -->
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Header -->
+                    <RowDefinition Height="Auto"/> <!-- Admin Section -->
+                    <RowDefinition Height="Auto"/> <!-- Transfer Info -->
+                    <RowDefinition Height="Auto"/> <!-- Reply -->
+                    <RowDefinition Height="Auto"/> <!-- Status -->
+                </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="البحث والتقارير > تفاصيل وارد > تعديل" Foreground="#2196F3" FontSize="14"/>
+        </StackPanel>
+
+        <!-- Admin Only Edit Section -->
+        <GroupBox Grid.Row="1" Margin="0,0,0,15" Header="الإعدادات العامة (للمسؤولين فقط)" 
+                  BorderBrush="#E74C3C" Foreground="#E74C3C" Padding="10"
+                  Visibility="{Binding IsDeleteVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="رقم الموضوع:" VerticalAlignment="Center" Margin="0,0,10,10"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AdminSubjectNumber}" Margin="0,0,20,10" Padding="5"/>
+
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="الكود:" VerticalAlignment="Center" Margin="0,0,10,10"/>
+                <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding AdminCode}" Margin="0,0,0,10" Padding="5"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="الموضوع:" VerticalAlignment="Center" Margin="0,0,10,10"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding AdminSubject}" Padding="5" TextWrapping="Wrap" MinHeight="40" Margin="0,0,0,10"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="الم. المسئول:" VerticalAlignment="Center" Margin="0,0,10,10"/>
+                <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" 
+                          ItemsSource="{Binding AllActiveEngineers}"
+                          DisplayMemberPath="FullName"
+                          SelectedValuePath="FullName"
+                          SelectedValue="{Binding AdminResponsibleEngineer}"
+                          Padding="5" Height="35" Margin="0,0,0,10"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="جهة الورود:" VerticalAlignment="Center" Margin="0,0,10,10"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding AdminFromEntity}" Margin="0,0,20,10" Padding="5"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="جهة المهندس:" VerticalAlignment="Center" Margin="0,0,10,10"/>
+                <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding AdminFromEngineer}" Margin="0,0,0,10" Padding="5"/>
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="تاريخ الوارد:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <DatePicker Grid.Row="4" Grid.Column="1" SelectedDate="{Binding AdminInboundDate}" Padding="5" Height="35"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Transfer Info (Multi-Select) -->
+        <GroupBox Grid.Row="2" Header="معلومات التحويل" BorderBrush="#DDD" Padding="15" Margin="0,0,0,20" Foreground="#2196F3">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 1: Engineer Selection + Date -->
+                <Grid Grid.Row="0" Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- Label -->
+                    <TextBlock Grid.Column="0" Text="اختر مهندس:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    
+                    <!-- ComboBox -->
+                    <ComboBox x:Name="cmbEngineers" Grid.Column="1" 
+                              ItemsSource="{Binding FilteredEngineers}" 
+                              DisplayMemberPath="FullName"
+                              SelectedItem="{Binding SelectedEngineer}"
+                              IsEditable="True"
+                              TextSearch.TextPath="FullName"
+                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                              Margin="0,0,5,0" Padding="5" Height="30"/>
+
+                    <!-- Add Button -->
+                    <Button Grid.Column="2" Command="{Binding AddEngineerCommand}" 
+                            Content="⬇️ إضافة" 
+                            ToolTip="إضافة المهندس للقائمة المختارة"
+                            Background="#9E9E9E" Foreground="White" 
+                            Padding="10,5" Margin="0,0,10,0"
+                            BorderThickness="0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+
+                    <!-- Date Label -->
+                    <TextBlock Grid.Column="3" Text="تاريخ التحويل:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    
+                    <!-- DatePicker -->
+                    <DatePicker Grid.Column="4" SelectedDate="{Binding TransferDate}" Padding="5" Height="30" Width="120"/>
+                </Grid>
+
+                <!-- Row 2: Selected Engineers List -->
+                <TextBlock Grid.Row="1" Text="المهندسون المحول إليهم:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                
+                <Border Grid.Row="2" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="5" MinHeight="100" MaxHeight="150">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding SelectedEngineers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F5F5F5" CornerRadius="4" Padding="8,5" Margin="0,0,0,5">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <TextBlock Grid.Column="0" Text="{Binding FullName}" VerticalAlignment="Center"/>
+                                            
+                                            <Button Grid.Column="1" 
+                                                    Command="{Binding DataContext.RemoveEngineerCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                                    CommandParameter="{Binding}"
+                                                    Content="🗑️" 
+                                                    Background="#F44336" Foreground="White" 
+                                                    Padding="8,2" 
+                                                    BorderThickness="0" Cursor="Hand" FontSize="12">
+                                                <Button.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="3"/>
+                                                    </Style>
+                                                </Button.Resources>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </GroupBox>
+
+        <!-- Reply/Action -->
+        <GroupBox Grid.Row="3" Header="الرد/الإجراء" BorderBrush="#DDD" Padding="15" Margin="0,0,0,20" Foreground="#2196F3">
+            <TextBox Text="{Binding Reply}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderBrush="#DDD" Padding="5" FontSize="14" MinHeight="150"/>
+        </GroupBox>
+
+        <!-- Status -->
+        <GroupBox Grid.Row="4" Header="الحالة" BorderBrush="#DDD" Padding="15" Margin="0,0,0,20" Foreground="#2196F3">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="الحالة:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Source={StaticResource CorrespondenceStatusEnum}}" 
+                          SelectedItem="{Binding Status}" Padding="5" Height="35"/>
+            </Grid>
+        </GroupBox>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <Border Grid.Row="1" Background="#F8F9FA" BorderBrush="#DEE2E6" BorderThickness="0,1,0,0" Padding="20,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Command="{Binding DeleteCommand}" 
+                         Visibility="{Binding IsDeleteVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                         Content="🗑️ حذف الموضوع" 
+                         Background="#F44336" Foreground="White" 
+                         Padding="15,8"
+                         BorderThickness="0" Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Command="{Binding SaveCommand}" IsDefault="True" Content="💾 حفظ التعديلات" Background="#FF9800" Foreground="White" Padding="25,12" Margin="10,0" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Command="{Binding CancelCommand}" IsCancel="True" Content="رجوع" Background="#9E9E9E" Foreground="White" Padding="20,12" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

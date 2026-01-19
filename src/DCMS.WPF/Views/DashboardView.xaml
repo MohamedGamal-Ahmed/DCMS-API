@@ -1,0 +1,733 @@
+<UserControl x:Class="DCMS.WPF.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+             xmlns:vm="clr-namespace:DCMS.WPF.ViewModels"
+             xmlns:views="clr-namespace:DCMS.WPF.Views"
+             xmlns:components="clr-namespace:DCMS.WPF.Views.Components"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200"
+             FlowDirection="RightToLeft">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Global Dashboard Header / Refresh Section -->
+        <Grid Grid.Row="0" Margin="25,15,25,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <TextBlock Text="لوحة القيادة" FontSize="24" FontWeight="Bold" Foreground="#2C3E50" VerticalAlignment="Center"/>
+                <Border Margin="15,0,0,0" Padding="10,4" Background="#E1F5FE" CornerRadius="12" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding LastRefreshedText}" Foreground="#0288D1" FontSize="12" FontWeight="SemiBold"/>
+                </Border>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Command="{Binding ForceRefreshCommand}" 
+                        Background="#3498DB" Foreground="White" 
+                        Padding="15,8" BorderThickness="0" Cursor="Hand"
+                        ToolTip="تحديث كافة البيانات من السيرفر">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="20"/>
+                        </Style>
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔄" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14"/>
+                        <TextBlock Text="تحديث البيانات" VerticalAlignment="Center" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <TabControl Grid.Row="1" Margin="20" Background="WhiteSmoke" BorderThickness="0">
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
+                    <Setter Property="FontSize" Value="16"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="15,10"/>
+                    <Setter Property="Margin" Value="0,0,5,0"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                </Style>
+                
+                <!-- Interactive Card Style with Hover Effects -->
+                <Style x:Key="InteractiveCardStyle" TargetType="Border">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="CornerRadius" Value="12"/>
+                    <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Setter Property="Padding" Value="15,18"/>
+                    <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                    <Setter Property="RenderTransform">
+                        <Setter.Value>
+                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.12" Color="#000"/>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.03" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.03" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="Effect.BlurRadius" To="20" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="Effect.ShadowDepth" To="6" Duration="0:0:0.15"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="Effect.BlurRadius" To="12" Duration="0:0:0.15"/>
+                                        <DoubleAnimation Storyboard.TargetProperty="Effect.ShadowDepth" To="3" Duration="0:0:0.15"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+                
+                <DataTemplate DataType="{x:Type vm:ExecutiveAnalysisViewModel}">
+                    <views:ExecutiveAnalysisView/>
+                </DataTemplate>
+            </TabControl.Resources>
+
+            <!-- Tab 1: General Overview (Existing Dashboard) -->
+            <TabItem Header="نظرة عامة">
+                <Grid>
+                    <!-- Loading Skeleton (Structure Mimic) -->
+                    <Grid Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisConverter}}" Margin="0,20,0,0">
+                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- KPIs -->
+                            <RowDefinition Height="Auto"/> <!-- Charts -->
+                            <RowDefinition Height="Auto"/> <!-- Other -->
+                        </Grid.RowDefinitions>
+                        
+                        <!-- KPI Skeletons -->
+                        <UniformGrid Grid.Row="0" Margin="0,0,0,20" Columns="8" Rows="1" MaxWidth="1200" HorizontalAlignment="Center">
+                             <!-- Repeat 8 generic cards -->
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                             <Border Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="12,15">
+                                 <StackPanel>
+                                     <components:SkeletonLoaderView RowCount="1" Height="15" Margin="0,0,0,10"/>
+                                     <components:SkeletonLoaderView RowCount="1" Height="30" Width="60" HorizontalAlignment="Left"/>
+                                 </StackPanel>
+                             </Border>
+                        </UniformGrid>
+
+                        <!-- Chart Skeletons -->
+                        <Grid Grid.Row="1" Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="20">
+                                <StackPanel>
+                                    <components:SkeletonLoaderView RowCount="1" Height="20" Width="150" Margin="0,0,0,20"/>
+                                    <components:SkeletonLoaderView RowCount="6" Height="300"/> 
+                                </StackPanel>
+                            </Border>
+                             <Border Grid.Column="1" Margin="5" Background="White" CornerRadius="10" BorderBrush="#EEE" BorderThickness="1" Padding="20">
+                                <StackPanel>
+                                    <components:SkeletonLoaderView RowCount="1" Height="20" Width="100" Margin="0,0,0,20"/>
+                                    <components:SkeletonLoaderView RowCount="4" Height="300"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Actual Content (Visible only when NOT IsBusy) -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                    <Grid Margin="0,20,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- KPIs -->
+                            <RowDefinition Height="Auto"/> <!-- Charts -->
+                            <RowDefinition Height="Auto"/> <!-- Workload -->
+                            <RowDefinition Height="Auto"/> <!-- Custom Staff Distribution -->
+                        </Grid.RowDefinitions>
+
+                        <!-- KPI Cards -->
+                        <!-- KPI Cards Section -->
+                        <UniformGrid Grid.Row="0" Margin="0,0,0,20" Columns="8" Rows="1" MaxWidth="1200" HorizontalAlignment="Center">
+                            <!-- Card 1: Inbound Today -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" 
+                                    Command="{Binding NavigateToSearchCommand}" CommandParameter="InboundToday" Cursor="Hand">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="الوارد اليوم" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="📥" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding TotalInboundToday}" FontSize="28" FontWeight="Bold" Foreground="#2C3E50"/>
+                                            <TextBlock Text="/" FontSize="16" Margin="4,0" VerticalAlignment="Bottom" Foreground="#BDC3C7"/>
+                                            <TextBlock Text="{Binding TotalInboundMonth}" FontSize="16" Foreground="#95A5A6" VerticalAlignment="Bottom"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 2: Outbound Today -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" 
+                                    Command="{Binding NavigateToSearchCommand}" CommandParameter="OutboundToday" Cursor="Hand">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="الصادر اليوم" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="📤" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding TotalOutboundToday}" FontSize="28" FontWeight="Bold" Foreground="#2C3E50"/>
+                                            <TextBlock Text="/" FontSize="16" Margin="4,0" VerticalAlignment="Bottom" Foreground="#BDC3C7"/>
+                                            <TextBlock Text="{Binding TotalOutboundMonth}" FontSize="16" Foreground="#95A5A6" VerticalAlignment="Bottom"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 3: Ongoing Tasks -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" 
+                                    Command="{Binding NavigateToSearchCommand}" CommandParameter="Ongoing" Cursor="Hand">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="موضوعات جارية" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="⏳" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding OngoingTasks}" FontSize="28" FontWeight="Bold" Foreground="#F39C12"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 4: Closed Tasks -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" 
+                                    Command="{Binding NavigateToSearchCommand}" CommandParameter="Closed" Cursor="Hand">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="موضوعات مغلقة" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="✅" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding ClosedTasks}" FontSize="28" FontWeight="Bold" Foreground="#27AE60"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 5: Overdue Tasks -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" 
+                                    Command="{Binding NavigateToSearchCommand}" CommandParameter="Overdue" Cursor="Hand">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="متأخرات (+7 أيام)" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="⚠️" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding OverdueTasks}" FontSize="28" FontWeight="Bold" Foreground="#C0392B"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 6: Upcoming Meetings -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" 
+                                    Command="{Binding NavigateToSearchCommand}" CommandParameter="UpcomingMeetings" Cursor="Hand">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="اجتماعات قادمة" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="📅" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding UpcomingMeetings}" FontSize="28" FontWeight="Bold" Foreground="#2980B9"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 7: Completion Rate -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Arrow">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="معدل الإنجاز" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="📊" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock FontSize="28" FontWeight="Bold" Foreground="#8E44AD">
+                                                <TextBlock.Text>
+                                                    <Binding Path="ResponseRate" StringFormat="{}{0:F1}%"/>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- Card 8: Response Speed -->
+                            <Button Margin="5" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Arrow">
+                                <Border Padding="12,15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <TextBlock Text="سرعة الرد (أيام)" FontSize="11" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                            <TextBlock Text="⚡" FontSize="24" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock FontSize="28" FontWeight="Bold" Foreground="#16A085">
+                                                <TextBlock.Text>
+                                                    <Binding Path="AverageResponseTime" StringFormat="{}{0:F1}"/>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </UniformGrid>
+
+                        <!-- Charts Row 1 -->
+                        <Grid Grid.Row="1" Margin="0,0,0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Inbound/Outbound Chart -->
+                            <Border Grid.Column="0" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="حركة الوارد والصادر (آخر 6 شهور)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                    <lvc:CartesianChart Grid.Row="1" MinHeight="300" Series="{Binding InboundOutboundSeries}" LegendLocation="Bottom">
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Title="الشهر" Labels="{Binding InboundOutboundLabels}"></lvc:Axis>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis Title="العدد" LabelFormatter="{Binding YFormatter}"></lvc:Axis>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </Grid>
+                            </Border>
+
+                            <!-- Inbound/Outbound Card Placeholder or Summary -->
+                            <Border Grid.Column="1" Margin="5" Padding="20" Background="#F8F9FA" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="تحليل الحركة" FontSize="14" FontWeight="Bold" Foreground="#34495E" Margin="0,0,0,10"/>
+                                    <TextBlock Text="يوضح هذا الرسم البياني العلاقة بين حجم المعاملات الواردة والصادرة خلال النصف الأخير من العام المالي الجاري." 
+                                               FontSize="12" Foreground="#7F8C8D" TextWrapping="Wrap" LineHeight="1.5"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Charts Row 2 -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Status Pie Chart (Moved here) -->
+                            <Border Grid.Column="0" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="توزيع الحالات" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                    <lvc:PieChart Grid.Row="1" MinHeight="300" Series="{Binding StatusSeries}" LegendLocation="Bottom" InnerRadius="50"
+                                                  ChartLegend="{x:Null}" Hoverable="True" DataClickCommand="{Binding DataClickCommand}"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Task Aging Chart -->
+                            <Border Grid.Column="1" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="أعمار المهام المفتوحة" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                    <lvc:CartesianChart Grid.Row="1" MinHeight="300" Series="{Binding TaskAgingSeries}" LegendLocation="Bottom">
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Labels="{Binding AgingLabels}"></lvc:Axis>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis Title="العدد" LabelFormatter="{Binding YFormatter}"></lvc:Axis>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </Grid>
+                            </Border>
+
+                            <!-- External Distribution Chart -->
+                            <Border Grid.Column="2" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="التوزيع الخارجي (أكبر 10 جهات)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                    <lvc:PieChart Grid.Row="1" MinHeight="300" Series="{Binding ExternalDistributionSeries}" LegendLocation="Bottom" InnerRadius="40"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <!-- Custom Staff Distribution Chart (Eman, Sobhi, Alia) -->
+                        <Border Grid.Row="3" Margin="5,15,5,10" Padding="20" Background="White" CornerRadius="12" BorderBrush="#2196F3" BorderThickness="1.5">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.2"/>
+                            </Border.Effect>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                    <TextBlock Text="📊" FontSize="24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="توزيع ضغط العمل بين المهندسين" FontSize="18" FontWeight="Bold" Foreground="#2C3E50" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <lvc:CartesianChart Grid.Row="1" MinHeight="250" Series="{Binding CustomEngineerSeries}" LegendLocation="Right">
+                                    <lvc:CartesianChart.AxisX>
+                                        <lvc:Axis Title="الموظف" Labels="{Binding CustomEngineerLabels}">
+                                            <lvc:Axis.Separator>
+                                                <lvc:Separator IsEnabled="False" Step="1"/>
+                                            </lvc:Axis.Separator>
+                                        </lvc:Axis>
+                                    </lvc:CartesianChart.AxisX>
+                                    <lvc:CartesianChart.AxisY>
+                                        <lvc:Axis Title="العدد" LabelFormatter="{Binding YFormatter}"/>
+                                    </lvc:CartesianChart.AxisY>
+                                </lvc:CartesianChart>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2: AI Analytics -->
+            <TabItem Header="تحليل الذكاء الاصطناعي">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- AI ROI Cards -->
+                        <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,25">
+                            <Border Margin="10" Padding="25,30" Background="#F0F9FF" CornerRadius="20" BorderBrush="#3498DB" BorderThickness="2">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="15" ShadowDepth="4" Opacity="0.1"/>
+                                </Border.Effect>
+                                <StackPanel>
+                                    <TextBlock Text="⌛ ساعات العمل الموفرة" FontSize="14" Foreground="#2980B9" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    <TextBlock FontSize="36" FontWeight="ExtraBold" Foreground="#2980B9" TextAlignment="Right">
+                                        <Run Text="{Binding AiHoursSaved, Mode=OneWay, StringFormat={}{0:F1}}"/>
+                                        <Run Text=" ساعة" FontSize="16"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Margin="10" Padding="25,30" Background="#F0FFF4" CornerRadius="20" BorderBrush="#27AE60" BorderThickness="2">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="15" ShadowDepth="4" Opacity="0.1"/>
+                                </Border.Effect>
+                                <StackPanel>
+                                    <TextBlock Text="👥 تأثير العمالة الرقمية" FontSize="14" Foreground="#27AE60" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    <TextBlock FontSize="36" FontWeight="ExtraBold" Foreground="#27AE60" TextAlignment="Right">
+                                        <Run Text="{Binding FteImpact, Mode=OneWay, StringFormat={}{0:F2}}"/>
+                                        <Run Text=" موظف" FontSize="16"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Margin="10" Padding="25,30" Background="#FFF9E6" CornerRadius="20" BorderBrush="#F1C40F" BorderThickness="2">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="15" ShadowDepth="4" Opacity="0.1"/>
+                                </Border.Effect>
+                                <StackPanel>
+                                    <TextBlock Text="🎯 نسبة دقة الذكاء" FontSize="14" Foreground="#D4AC0D" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    <TextBlock FontSize="36" FontWeight="ExtraBold" Foreground="#D4AC0D" TextAlignment="Right">
+                                        <Run Text="%"/>
+                                        <Run Text="{Binding AiSuccessRate, Mode=OneWay, StringFormat={}{0:F0}}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Margin="10" Padding="15" Background="#FEF2F2" CornerRadius="20" BorderBrush="#E74C3C" BorderThickness="2">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="15" ShadowDepth="4" Opacity="0.1"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="📄 تقارير الإنجاز" FontSize="14" Foreground="#C0392B" FontWeight="Bold" Margin="0,0,0,5"/>
+                                    <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Button Content="تصدير تقرير ROI" Command="{Binding ExportRoiReportCommand}" 
+                                                Background="#E74C3C" Foreground="White" Margin="0,5" Padding="15,8" FontWeight="Bold">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="8"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
+                                        <Button Content="التقرير التنفيذي الشامل" Command="{Binding ExportComprehensiveReportCommand}" 
+                                                Background="#2C3E50" Foreground="White" Padding="15,8" FontWeight="Bold">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="8"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- Insights Narrative -->
+                        <Border Grid.Row="1" Margin="10,0,10,15" Padding="20" Background="#2C3E50" CornerRadius="12">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="💡" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AiInsights}" FontSize="15" Foreground="White" TextWrapping="Wrap" VerticalAlignment="Center" LineHeight="24"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Management Insights with Analyze Button -->
+                        <Border Grid.Row="1" Margin="10,0,10,25" Padding="20" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#667eea" Offset="0"/>
+                                    <GradientStop Color="#764ba2" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                                    <TextBlock Text="✨" FontSize="24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="المستشار الإداري الذكي" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                    <Button Command="{Binding AnalyzeWorkloadCommand}"
+                                            Margin="20,0,0,0" Padding="15,8" 
+                                            Background="#FFD700" Foreground="#333" FontWeight="Bold"
+                                            Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🪄" FontSize="14" Margin="0,0,8,0"/>
+                                            <TextBlock Text="تحليل الآن"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <Button Command="{Binding ExportComprehensiveReportCommand}"
+                                            Margin="10,0,0,0" Padding="15,8" 
+                                            Background="White" Foreground="#333" FontWeight="Bold"
+                                            BorderBrush="White" BorderThickness="1"
+                                            Opacity="0.9"
+                                            Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📄" FontSize="14" Margin="0,0,8,0"/>
+                                            <TextBlock Text="تصدير التقرير (PDF)"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                                <ScrollViewer Grid.Row="1" MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                    <TextBlock Text="{Binding ManagementInsights}" FontSize="14" Foreground="White" TextWrapping="Wrap" LineHeight="22"/>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+
+                        <!-- AI Charts Section -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Usage Trend -->
+                            <Border Grid.Column="0" Margin="10" Padding="20" Background="White" CornerRadius="15" BorderBrush="#DDD" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="تطور استخدام المساعد (30 يوم)" FontSize="16" FontWeight="Bold" Margin="0,0,0,20" Foreground="#34495E"/>
+                                    <lvc:CartesianChart Height="350" Series="{Binding AiUsageTrendSeries}" LegendLocation="Bottom">
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Labels="{Binding AiUsageTrendLabels}">
+                                                <lvc:Axis.Separator>
+                                                    <lvc:Separator IsEnabled="False" Step="5"/>
+                                                </lvc:Axis.Separator>
+                                            </lvc:Axis>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis Title="عدد الطلبات" MinValue="0"/>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Tool Performance Comparison -->
+                            <Border Grid.Column="1" Margin="10" Padding="20" Background="White" CornerRadius="15" BorderBrush="#DDD" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="سرعة تنفيذ المهام (ثانية)" FontSize="16" FontWeight="Bold" Margin="0,0,0,20" Foreground="#34495E"/>
+                                    <lvc:CartesianChart Height="350" Series="{Binding AiPerformanceComparisonSeries}" LegendLocation="Bottom">
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Title="الوقت (ثواني)" LabelFormatter="{Binding YFormatter}"/>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis Labels="{Binding AiPerformanceLabels}"/>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+
+
+            <!-- Tab 3: SLA & Performance -->
+            <TabItem Header="كفاءة العمل و SLA">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- SLA Cards -->
+                        <UniformGrid Grid.Row="0" Columns="3" Margin="0,0,0,20">
+                            <Border Margin="5" Padding="20" Background="White" CornerRadius="10" BorderBrush="#2196F3" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="معدل الالتزام بـ SLA" FontSize="14" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding SlaSummary.SlaComplianceRate, Mode=OneWay, StringFormat={}{0:P1}}" FontSize="36" FontWeight="Bold" Foreground="#2196F3" Margin="0,10,0,0"/>
+                                    <ProgressBar Value="{Binding SlaSummary.SlaComplianceRate, Mode=OneWay, Converter={StaticResource PercentageConverter}}" Height="10" Margin="0,10,0,0" Foreground="#2196F3"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Margin="5" Padding="20" Background="White" CornerRadius="10" BorderBrush="#4CAF50" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="متوسط زمن الاستجابة (Lead Time)" FontSize="14" Foreground="Gray"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                        <TextBlock Text="{Binding SlaSummary.AverageLeadTimeDays, StringFormat=N1}" FontSize="36" FontWeight="Bold" Foreground="#4CAF50"/>
+                                        <TextBlock Text="يوم" FontSize="18" VerticalAlignment="Bottom" Margin="10,0,0,5" Foreground="Gray"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Margin="5" Padding="20" Background="White" CornerRadius="10" BorderBrush="#FF9800" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="إجمالي المعاملات المكتملة" FontSize="14" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding SlaSummary.ClosedWithinSla}" FontSize="36" FontWeight="Bold" Foreground="#FF9800" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- User Performance Table -->
+                        <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="20" BorderBrush="#DDD" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="أداء فريق العمل (Data Entry &amp; Processing)" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <DataGrid ItemsSource="{Binding UserPerformance}" AutoGenerateColumns="False" IsReadOnly="True" Background="Transparent" BorderThickness="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="المستخدم" Binding="{Binding UserName}" Width="2*"/>
+                                        <DataGridTextColumn Header="تسجيل وارد" Binding="{Binding Registrations}" Width="*"/>
+                                        <DataGridTextColumn Header="إجراءات تحويل" Binding="{Binding Actions}" Width="*"/>
+                                        <DataGridTextColumn Header="إغلاق موضوعات" Binding="{Binding Closures}" Width="*"/>
+                                        <DataGridTextColumn Header="إجمالي النشاط" Binding="{Binding TotalActivity}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+
+            </TabItem>
+
+            <!-- Tab 4: Executive Analysis -->
+            <TabItem Header="التحليل الإحصائي المتقدم">
+                 <ContentControl Content="{Binding ExecutiveAnalysisViewModel}"/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

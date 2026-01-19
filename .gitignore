@@ -1,0 +1,30 @@
+# Build outputs
+bin/
+obj/
+publish/
+publish_*/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Environment
+.env
+.env.local
+appsettings.Local.json
+
+# Node
+node_modules/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Mobile folder (separate repo)
+Mobile/

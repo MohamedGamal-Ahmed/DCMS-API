@@ -1,0 +1,164 @@
+<UserControl x:Class="DCMS.WPF.Views.LockScreenView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" d:DesignHeight="600" d:DesignWidth="400">
+    
+    <UserControl.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        
+        <!-- Deep Sea Gradient -->
+        <LinearGradientBrush x:Key="DeepSeaGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0f2027" Offset="0"/>
+            <GradientStop Color="#203a43" Offset="0.5"/>
+            <GradientStop Color="#2c5364" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <!-- Glassmorphism Background -->
+        <SolidColorBrush x:Key="GlassBackground" Color="#50FFFFFF"/>
+        
+        <!-- Modern Button Style -->
+        <Style x:Key="UnlockButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#00D4AA"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="40,14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#00B894"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#009B77"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="SignOutButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#30FF6B6B"/>
+            <Setter Property="Foreground" Value="#FF6B6B"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#50FF6B6B"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <Grid Background="{StaticResource DeepSeaGradient}">
+        <!-- Main Content -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            
+            <!-- Glassmorphism Card -->
+            <Border Background="{StaticResource GlassBackground}" 
+                    CornerRadius="24" Width="420" Padding="40,35">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="50" ShadowDepth="0" Opacity="0.25" Color="Black"/>
+                </Border.Effect>
+                
+                <StackPanel>
+                    <!-- Lock Icon with Animation -->
+                    <Border Width="90" Height="90" CornerRadius="45" 
+                            Background="#2c5364" Margin="0,0,0,20" HorizontalAlignment="Center">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="15" ShadowDepth="3" Opacity="0.3"/>
+                        </Border.Effect>
+                        <TextBlock Text="🔒" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    
+                    <!-- Title -->
+                    <TextBlock Text="الجلسة مقفلة" FontSize="26" FontWeight="Bold" 
+                               Foreground="White" HorizontalAlignment="Center"/>
+                    
+                    <!-- Username -->
+                    <TextBlock Text="{Binding CurrentUsername}" 
+                               FontSize="16" Foreground="#BBBBBB" 
+                               HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                    
+                    <!-- Current Time Display -->
+                    <TextBlock x:Name="txtTime" Text="--:--" FontSize="42" FontWeight="Light"
+                               Foreground="#FFFFFF" HorizontalAlignment="Center" Margin="0,25,0,5"/>
+                    <TextBlock x:Name="txtDate" Text="---" FontSize="14" Foreground="#90FFFFFF"
+                               HorizontalAlignment="Center" Margin="0,0,0,25"/>
+                    
+                    <!-- Password Field -->
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="كلمة المرور" Foreground="#CCCCCC" FontSize="13" Margin="0,0,0,8"/>
+                        <PasswordBox x:Name="PasswordBox" Height="50" FontSize="16" Padding="15,12"
+                                     Background="#25FFFFFF" Foreground="White" BorderThickness="1"
+                                     BorderBrush="#40FFFFFF">
+                            <PasswordBox.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="10"/>
+                                </Style>
+                            </PasswordBox.Resources>
+                        </PasswordBox>
+                        
+                        <!-- Error Message -->
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="#FF6B6B" 
+                                   FontSize="12" Margin="0,8,0,0" 
+                                   Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}"/>
+                    </StackPanel>
+                    
+                    <!-- Unlock Button -->
+                    <Button Content="🔓  فتح القفل" Style="{StaticResource UnlockButtonStyle}"
+                            Command="{Binding UnlockCommand}" 
+                            CommandParameter="{Binding ElementName=PasswordBox}"
+                            HorizontalAlignment="Center"/>
+                    
+                    <!-- Sign Out Button (Now Visible!) -->
+                    <Button Content="🚪  تسجيل خروج" Style="{StaticResource SignOutButtonStyle}"
+                            Command="{Binding SignOutCommand}" 
+                            HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Quick Tip -->
+            <TextBlock Text="💡 اضغط Enter بعد إدخال كلمة المرور للفتح السريع" 
+                       Foreground="#60FFFFFF" FontSize="11" 
+                       HorizontalAlignment="Center" Margin="0,20,0,0"/>
+        </StackPanel>
+        
+        <!-- App Info (Bottom Left) -->
+        <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="20">
+            <TextBlock Text="DCMS v1.1.3" Foreground="#60FFFFFF" FontSize="12" FontWeight="SemiBold"/>
+            <TextBlock Text="نظام إدارة المراسلات" Foreground="#40FFFFFF" FontSize="10"/>
+        </StackPanel>
+        
+        <!-- Security Badge (Bottom Right) -->
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="20"
+                Background="#20FFFFFF" CornerRadius="15" Padding="12,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🔐" FontSize="12" Margin="0,0,6,0"/>
+                <TextBlock Text="محمي بكلمة مرور" Foreground="#80FFFFFF" FontSize="11"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
+

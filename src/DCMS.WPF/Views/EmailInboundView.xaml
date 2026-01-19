@@ -1,0 +1,151 @@
+<UserControl x:Class="DCMS.WPF.Views.EmailInboundView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:DCMS.WPF.Controls"
+             mc:Ignorable="d" 
+             FlowDirection="RightToLeft"
+             d:DesignHeight="800" d:DesignWidth="900">
+
+    <Grid Background="#F5F5F5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="White" Padding="30,20" 
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="📧 تسجيل إيميل جديد" 
+                               FontSize="28" 
+                               FontWeight="Bold" 
+                               Foreground="#9C27B0"/>
+                </StackPanel>
+                <TextBlock Text="أدخل تفاصيل الإيميل الوارد" 
+                           FontSize="14" 
+                           Foreground="#757575"
+                           Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Form -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Border Background="White" 
+                    Margin="30" 
+                    Padding="30" 
+                    CornerRadius="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.1"/>
+                </Border.Effect>
+
+                <StackPanel MaxWidth="800">
+                    
+                    <!-- Section: Email Data -->
+                    <TextBlock Text="بيانات الإيميل" 
+                               FontSize="18" 
+                               FontWeight="Bold" 
+                               Foreground="#2196F3"
+                               Margin="0,0,0,15"/>
+
+                    <!-- Subject -->
+                    <TextBlock Text="الموضوع (Subject)" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding Subject, UpdateSourceTrigger=PropertyChanged}" Height="40" Padding="10" FontSize="14" Margin="0,0,0,15" BorderBrush="#DDD"/>
+
+                    <!-- From -->
+                    <TextBlock Text="من (From)" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding From, UpdateSourceTrigger=PropertyChanged}" Height="40" Padding="10" FontSize="14" Margin="0,0,0,15" BorderBrush="#DDD"/>
+
+                    <!-- To -->
+                    <TextBlock Text="إلى (To)" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding To, UpdateSourceTrigger=PropertyChanged}" Height="40" Padding="10" FontSize="14" Margin="0,0,0,15" BorderBrush="#DDD"/>
+
+                    <!-- CC -->
+                    <TextBlock Text="نسخة (CC)" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding CC, UpdateSourceTrigger=PropertyChanged}" Height="40" Padding="10" FontSize="14" Margin="0,0,0,15" BorderBrush="#DDD"/>
+
+                    <!-- Body -->
+                    <TextBlock Text="نص الإيميل (Body)" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding Body, UpdateSourceTrigger=PropertyChanged}" Height="120" Padding="10" FontSize="14" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Margin="0,0,0,15" BorderBrush="#DDD"/>
+
+                    <!-- Attachment URL -->
+                    <TextBlock Text="رابط المرفقات" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding AttachmentUrl, UpdateSourceTrigger=PropertyChanged}" Height="40" Padding="10" FontSize="14" BorderBrush="#DDD"/>
+                        <Button Grid.Column="1" Content="لصق" Width="60" Height="40" Margin="10,0,0,0" Background="#EEE" Foreground="#333" BorderThickness="0"/>
+                    </Grid>
+
+                    <!-- Reply to Previous Email -->
+                    <TextBlock Text="ردا على إيميل سابق" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding PreviousEmails}"
+                              SelectedItem="{Binding PreviousEmailReference}"
+                              IsEditable="True"
+                              Height="40" 
+                              FontSize="14" 
+                              Margin="0,0,0,15"/>
+
+                    <Separator Margin="0,10,0,20"/>
+
+                    <!-- Section: Routing & Visa -->
+                    <TextBlock Text="التوجيه والتأشيرة" 
+                               FontSize="18" 
+                               FontWeight="Bold" 
+                               Foreground="#2196F3"
+                               Margin="0,0,0,15"/>
+
+                    <!-- Responsible Engineer -->
+                    <TextBlock Text="المهندس المسئول" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <controls:EngineerSelectorControl DataContext="{Binding ResponsibleEngineerSelector}" 
+                                                       Height="250" 
+                                                       Margin="0,0,0,15"/>
+
+                    <!-- Transfer To -->
+                    <TextBlock Text="تحويل إلى" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <controls:EngineerSelectorControl DataContext="{Binding TransferredToSelector}" 
+                                                       Height="250" 
+                                                       Margin="0,0,0,15"/>
+
+                    <!-- Visa Text -->
+                    <TextBlock Text="نص التأشيرة" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding VisaText, UpdateSourceTrigger=PropertyChanged}" Height="60" Padding="10" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,15" BorderBrush="#DDD"/>
+
+                    <!-- Status -->
+                    <TextBlock Text="الحالة" FontSize="14" FontWeight="Bold" Foreground="#555" Margin="0,0,0,5"/>
+                    <ComboBox SelectedItem="{Binding Status}" Height="40" FontSize="14" Margin="0,0,0,30">
+                        <ComboBoxItem Content="جديد" IsSelected="True"/>
+                        <ComboBoxItem Content="جاري العمل"/>
+                        <ComboBoxItem Content="منتهي"/>
+                    </ComboBox>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button Content="💾 حفظ" Command="{Binding SaveCommand}" Width="150" Height="50" Background="#9C27B0" Foreground="White" BorderThickness="0" FontSize="16" FontWeight="Bold" Cursor="Hand" Margin="0,0,15,0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
+                        <Button Content="🔄 مسح" Command="{Binding ClearCommand}" Width="150" Height="50" Background="#F44336" Foreground="White" BorderThickness="0" FontSize="16" FontWeight="Bold" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Loading Indicator -->
+                    <ProgressBar IsIndeterminate="True" Height="3" Margin="0,20,0,0" Visibility="{Binding IsSaving, Converter={StaticResource BoolToVisConverter}}"/>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

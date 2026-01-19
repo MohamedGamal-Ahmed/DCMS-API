@@ -1,0 +1,161 @@
+<UserControl x:Class="DCMS.WPF.Views.BackupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DCMS.WPF.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800"
+             FlowDirection="RightToLeft">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="White" Padding="20" Margin="0,0,0,20" CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💾" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="النسخ الاحتياطي واستعادة البيانات" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" Foreground="#2C3E50"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Actions -->
+        <Border Grid.Row="1" Background="White" Padding="20" Margin="0,0,0,20" CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+
+
+                <Button Command="{Binding ExportJsonCommand}" 
+                        Content="📤 تصدير JSON" 
+                        Background="#4CAF50" Foreground="White" 
+                        Padding="20,10" Margin="0,0,10,0"
+                        FontSize="14" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand"
+                        ToolTip="تصدير جميع البيانات إلى ملف JSON">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button Command="{Binding ImportJsonCommand}" 
+                        Content="📥 استيراد JSON" 
+                        Background="#FF5722" Foreground="White" 
+                        Padding="20,10" Margin="0,0,10,0"
+                        FontSize="14" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand"
+                        ToolTip="استيراد البيانات من ملف JSON">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button Command="{Binding RefreshCommand}" 
+                        Content="🔄 تحديث القائمة" 
+                        Background="#7F8C8D" Foreground="White" 
+                        Padding="20,10" 
+                        FontSize="14"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Backups List -->
+        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="0">
+            <Border.Effect>
+                <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+            </Border.Effect>
+            
+            <DataGrid ItemsSource="{Binding Backups}" 
+                      AutoGenerateColumns="False" 
+                      IsReadOnly="True"
+                      HeadersVisibility="Column" 
+                      GridLinesVisibility="Horizontal"
+                      Background="White" 
+                      BorderThickness="0"
+                      RowHeight="50"
+                      FontSize="14"
+                      AlternatingRowBackground="#F9F9F9">
+                
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="اسم الملف" Width="*" Binding="{Binding FileName}"/>
+                    <DataGridTextColumn Header="تاريخ الإنشاء" Width="200" Binding="{Binding CreatedDate, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                    <DataGridTextColumn Header="الحجم" Width="100" Binding="{Binding FileSizeFormatted}"/>
+                    
+                    <DataGridTemplateColumn Header="الإجراءات" Width="250">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Command="{Binding DataContext.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                            CommandParameter="{Binding FilePath}"
+                                            Content="♻️ استعادة" 
+                                            Background="#FF9800" Foreground="White" 
+                                            Padding="15,5" Margin="5,0" 
+                                            BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="4"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                    
+                                    <Button Command="{Binding DataContext.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                            CommandParameter="{Binding FilePath}"
+                                            Content="🗑️ حذف" 
+                                            Background="#F44336" Foreground="White" 
+                                            Padding="15,5" Margin="5,0" 
+                                            BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="4"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#34495E"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="14"/>
+                        <Setter Property="Padding" Value="12,10"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+            </DataGrid>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Grid Grid.RowSpan="3" Background="#80FFFFFF" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="جاري العمل..." FontSize="24" FontWeight="Bold" Foreground="#2C3E50"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

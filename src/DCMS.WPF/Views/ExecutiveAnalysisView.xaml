@@ -1,0 +1,205 @@
+<UserControl x:Class="DCMS.WPF.Views.ExecutiveAnalysisView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200"
+             FlowDirection="RightToLeft">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="20" Background="WhiteSmoke">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- KPIs + Alerts -->
+                <RowDefinition Height="350"/>  <!-- Row 1 Charts -->
+                <RowDefinition Height="350"/>  <!-- Row 2 Charts -->
+                <RowDefinition Height="400"/>  <!-- Row 3 Map -->
+            </Grid.RowDefinitions>
+
+            <!-- KPI Cards & Insights -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/> <!-- KPIs -->
+                    <ColumnDefinition Width="2*"/> <!-- Insights Alert -->
+                </Grid.ColumnDefinitions>
+
+                <!-- KPIs -->
+                <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Card 1: Total -->
+                    <Border Grid.Column="0" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="إجمالي الأنشطة (للعام الحالي)" FontSize="12" Foreground="Gray"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="📅" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding TotalActivities}" FontSize="32" FontWeight="Bold" Foreground="#333"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Card 2: Online % -->
+                    <Border Grid.Column="1" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="نسبة الأونلاين" FontSize="12" Foreground="Gray"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="📶" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="#2196F3">
+                                    <TextBlock.Text>
+                                        <Binding Path="OnlinePercentage" StringFormat="{}{0:F1}%"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Card 3: Peak Month -->
+                    <Border Grid.Column="2" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="شهر الذروة" FontSize="12" Foreground="Gray"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="📈" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding BusiestMonth}" FontSize="24" FontWeight="Bold" Foreground="#E91E63"/>
+                                    <TextBlock Text="{Binding BusiestMonthCount, StringFormat=({0})}" FontSize="14" Foreground="Gray"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Insights Alert -->
+                <Border Grid.Column="1" Margin="10,5,5,5" Padding="15" Background="#E3F2FD" CornerRadius="10" BorderBrush="#2196F3" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="💡" FontSize="18" Margin="0,0,5,0"/>
+                            <TextBlock Text="توصيات ذكية" FontWeight="Bold" FontSize="16" Foreground="#0D47A1"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#1565C0" FontSize="13" LineHeight="20"
+                                   Text="{Binding SmartRecommendations}">
+                        </TextBlock>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Map Row (Row 1) - MOVED UP and Source removed to prevent crash -->
+            <Border Grid.Row="1" Margin="5,0,5,20" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="توزيع الاجتماعات حول العالم" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    
+                    <!-- Map Container: GeoMap is created dynamically in code-behind -->
+                    <Grid x:Name="MapContainer" Grid.Row="1" MinHeight="280">
+                        <TextBlock x:Name="MapErrorMessage" 
+                                   Text="بيانات الخريطة غير متاحة حاليا" 
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center" 
+                                   FontSize="16" 
+                                   Foreground="Gray"
+                                   Visibility="Collapsed"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Charts Row 1 (Now Row 2) -->
+            <Grid Grid.Row="2" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Monthly Chart -->
+                <Border Grid.Column="0" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="توزيع الأنشطة شهرياً" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <lvc:CartesianChart Grid.Row="1" Series="{Binding MonthlySeries}" LegendLocation="None">
+                            <lvc:CartesianChart.AxisX>
+                                <lvc:Axis Labels="{Binding MonthlyLabels}"/>
+                            </lvc:CartesianChart.AxisX>
+                            <lvc:CartesianChart.AxisY>
+                                <lvc:Axis LabelFormatter="{Binding NormalFormatter}"/>
+                            </lvc:CartesianChart.AxisY>
+                        </lvc:CartesianChart>
+                    </Grid>
+                </Border>
+
+                <!-- Peak Times Chart -->
+                <Border Grid.Column="1" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="أوقات الذروة اليومية" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <lvc:CartesianChart Grid.Row="1" Series="{Binding PeakTimesSeries}" LegendLocation="None">
+                            <lvc:CartesianChart.AxisX>
+                                <lvc:Axis Labels="{Binding PeakTimeLabels}"/>
+                            </lvc:CartesianChart.AxisX>
+                            <lvc:CartesianChart.AxisY>
+                                <lvc:Axis LabelFormatter="{Binding NormalFormatter}"/>
+                            </lvc:CartesianChart.AxisY>
+                        </lvc:CartesianChart>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Charts Row 2 (Now Row 3) -->
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Type Chart -->
+                <Border Grid.Column="0" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="تصنيف الأنشطة (النوع)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <lvc:PieChart Grid.Row="1" Series="{Binding TypeSeries}" LegendLocation="Right" InnerRadius="40"/>
+                    </Grid>
+                </Border>
+
+                <!-- Markets Chart -->
+                <Border Grid.Column="1" Margin="5" Padding="15" Background="White" CornerRadius="10" BorderBrush="#DDD" BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="أعلى الدول / الأسواق (للاجتماعات الخارجية)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <lvc:CartesianChart Grid.Row="1" Series="{Binding MarketSeries}" LegendLocation="None">
+                            <lvc:CartesianChart.AxisX>
+                                <lvc:Axis LabelFormatter="{Binding NormalFormatter}"/>
+                            </lvc:CartesianChart.AxisX>
+                            <lvc:CartesianChart.AxisY>
+                                <lvc:Axis Labels="{Binding MarketLabels}">
+                                    <lvc:Axis.Separator>
+                                         <lvc:Separator Step="1"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisY>
+                        </lvc:CartesianChart>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,87 @@
+<UserControl x:Class="DCMS.WPF.Views.SearchComponents.SearchFooterControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="1200">
+    <Border Background="White" Padding="20,15" CornerRadius="8">
+        <Border.Effect>
+            <DropShadowEffect Color="#E0E0E0" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+        </Border.Effect>
+        
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Action Buttons -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Command="{Binding SearchCommand}" 
+                        Content="🔍 بحث" 
+                        Background="#2196F3" Foreground="White" 
+                        Padding="25,10" Margin="0,0,10,0"
+                        FontWeight="Bold" FontSize="14"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+
+                <Button Command="{Binding ClearFiltersCommand}" 
+                        Content="🗑️ مسح الفلاتر" 
+                        Background="#F44336" Foreground="White" 
+                        Padding="20,10" Margin="0,0,10,0"
+                        FontSize="14"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+
+                <Button Command="{Binding ExportCommand}"
+                        Content="📄 تصدير تقرير PDF" 
+                        Background="#D32F2F" Foreground="White" 
+                        Padding="20,10" 
+                        FontSize="14"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+
+            <!-- Center: Pagination Info -->
+            <TextBlock Grid.Column="1" Text="{Binding PaginationInfo}" 
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       FontSize="13" FontWeight="SemiBold" Foreground="#555"/>
+
+            <!-- Right: Pagination Buttons -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Command="{Binding FirstPageCommand}" Content="⏮ الأولى" 
+                        Background="#607D8B" Foreground="White" 
+                        Padding="12,8" Margin="0,0,5,0" FontSize="12"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+                
+                <Button Command="{Binding PreviousPageCommand}" Content="◀ السابق" 
+                        Background="#607D8B" Foreground="White" 
+                        Padding="12,8" Margin="0,0,5,0" FontSize="12"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+                
+                <Button Command="{Binding NextPageCommand}" Content="التالي ▶" 
+                        Background="#607D8B" Foreground="White" 
+                        Padding="12,8" Margin="0,0,5,0" FontSize="12"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+                
+                <Button Command="{Binding LastPageCommand}" Content="الأخيرة ⏭" 
+                        Background="#607D8B" Foreground="White" 
+                        Padding="12,8" FontSize="12"
+                        BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
