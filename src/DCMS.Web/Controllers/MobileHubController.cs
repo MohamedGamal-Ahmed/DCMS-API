@@ -202,7 +202,7 @@ public class MobileHubController : Controller
             
             var attachments = new List<MobileAttachmentDto> { 
                 new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl ?? i.AttachmentUrl, Type = "original" },
-                new MobileAttachmentDto { Title = "مرفق التأشيرة/التحويل", Url = (!string.IsNullOrEmpty(i.OriginalAttachmentUrl) ? i.AttachmentUrl : null), Type = "transfer" },
+                new MobileAttachmentDto { Title = "مرفق التأشيرة/التحويل", Url = i.AttachmentUrl, Type = "transfer" },
                 new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" }
             };
             
