@@ -168,56 +168,87 @@ public class MobileHubController : Controller
 
     private async Task<object> GetAppDataAsync(int? userId = null)
     {
-        // 1. Fetch Latest Inbounds
-        var inbounds = await _context.Inbounds
+        // 1. Fetch Latest Inbounds (Raw data)
+        var inboundsRaw = await _context.Inbounds
             .Include(i => i.ResponsibleEngineers)
             .ThenInclude(re => re.Engineer)
             .OrderByDescending(i => i.InboundDate)
             .Take(200)
-            .Select(i => new MobileCorrespondenceDto
+            .Select(i => new 
             {
-                Id = i.Id,
-                Subject = i.Subject,
-                ReferenceNumber = i.SubjectNumber,
-                Status = i.Status == CorrespondenceStatus.New ? "New" : "Processed",
-                Date = i.InboundDate.ToString("yyyy-MM-dd"),
+                i.Id,
+                i.Subject,
+                i.SubjectNumber,
+                i.Status,
+                i.InboundDate,
                 ResponsibleEngineer = i.ResponsibleEngineers
                     .Select(re => re.Engineer.FullName)
                     .FirstOrDefault() ?? i.ResponsibleEngineer ?? "غير محدد",
-                Description = i.Reply ?? (i.FromEntity != null ? $"وارد من: {i.FromEntity}" : "لا توجد تفاصيل"),
-                Category = "Inbound",
-                CreatedAt = i.CreatedAt,
-                SortDate = i.InboundDate,
-                Attachments = new List<MobileAttachmentDto> { 
-                    new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl ?? i.AttachmentUrl, Type = "original" },
-                    new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" }
-                }.Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+                i.Reply,
+                i.FromEntity,
+                i.CreatedAt,
+                i.OriginalAttachmentUrl,
+                i.AttachmentUrl,
+                i.ReplyAttachmentUrl
             })
             .ToListAsync();
 
-        // 2. Fetch Latest Outbounds
-        var outbounds = await _context.Outbounds
+        var inbounds = inboundsRaw.Select(i => new MobileCorrespondenceDto
+        {
+            Id = i.Id,
+            Subject = i.Subject,
+            ReferenceNumber = i.SubjectNumber,
+            Status = i.Status == CorrespondenceStatus.New ? "New" : "Processed",
+            Date = i.InboundDate.ToString("yyyy-MM-dd"),
+            ResponsibleEngineer = i.ResponsibleEngineer,
+            Description = i.Reply ?? (i.FromEntity != null ? $"وارد من: {i.FromEntity}" : "لا توجد تفاصيل"),
+            Category = "Inbound",
+            CreatedAt = i.CreatedAt,
+            SortDate = i.InboundDate,
+            Attachments = new List<MobileAttachmentDto> { 
+                new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl ?? i.AttachmentUrl, Type = "original" },
+                new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" }
+            }.Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+        }).ToList();
+
+        // 2. Fetch Latest Outbounds (Raw data)
+        var outboundsRaw = await _context.Outbounds
             .OrderByDescending(o => o.OutboundDate)
             .Take(200)
-            .Select(o => new MobileCorrespondenceDto
+            .Select(o => new 
             {
-                Id = o.Id,
-                Subject = o.Subject,
-                ReferenceNumber = o.SubjectNumber,
-                Status = "Processed",
-                Date = o.OutboundDate.ToString("yyyy-MM-dd"),
-                ResponsibleEngineer = o.ResponsibleEngineer ?? "غير محدد",
-                Description = $"صادر إلى: {o.ToEntity}" + (string.IsNullOrEmpty(o.TransferredTo) ? "" : $" \nمحول إلى: {o.TransferredTo}"),
-                Category = "Outbound",
-                CreatedAt = o.CreatedAt,
-                SortDate = o.OutboundDate,
-                Attachments = new List<MobileAttachmentDto> { 
-                    new MobileAttachmentDto { Title = "المرفق الأصلي", Url = o.OriginalAttachmentUrl, Type = "original" },
-                    new MobileAttachmentDto { Title = "مرفق الرد", Url = o.ReplyAttachmentUrl, Type = "reply" }
-                }.Concat(o.AttachmentUrls.Select(url => new MobileAttachmentDto { Title = "مرفق إضافي", Url = url, Type = "other" }))
-                 .Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+                o.Id,
+                o.Subject,
+                o.SubjectNumber,
+                o.OutboundDate,
+                o.ResponsibleEngineer,
+                o.ToEntity,
+                o.TransferredTo,
+                o.CreatedAt,
+                o.OriginalAttachmentUrl,
+                o.ReplyAttachmentUrl,
+                o.AttachmentUrls
             })
             .ToListAsync();
+
+        var outbounds = outboundsRaw.Select(o => new MobileCorrespondenceDto
+        {
+            Id = o.Id,
+            Subject = o.Subject,
+            ReferenceNumber = o.SubjectNumber,
+            Status = "Processed",
+            Date = o.OutboundDate.ToString("yyyy-MM-dd"),
+            ResponsibleEngineer = o.ResponsibleEngineer ?? "غير محدد",
+            Description = $"صادر إلى: {o.ToEntity}" + (string.IsNullOrEmpty(o.TransferredTo) ? "" : $" \nمحول إلى: {o.TransferredTo}"),
+            Category = "Outbound",
+            CreatedAt = o.CreatedAt,
+            SortDate = o.OutboundDate,
+            Attachments = new List<MobileAttachmentDto> { 
+                new MobileAttachmentDto { Title = "المرفق الأصلي", Url = o.OriginalAttachmentUrl, Type = "original" },
+                new MobileAttachmentDto { Title = "مرفق الرد", Url = o.ReplyAttachmentUrl, Type = "reply" }
+            }.Concat(o.AttachmentUrls.Select(url => new MobileAttachmentDto { Title = "مرفق إضافي", Url = url, Type = "other" }))
+             .Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+        }).ToList();
 
         // Combine, Sort by actual Date, and Take Top 400 total (200 of each or combined sorted)
         var correspondences = inbounds
