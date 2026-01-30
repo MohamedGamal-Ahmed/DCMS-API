@@ -24,6 +24,15 @@ public partial class UpdateDialog : Window
             : updateInfo.ReleaseNotes;
     }
 
+    private void Window_ContentRendered(object? sender, EventArgs e)
+    {
+        // Automatically start the update if a download URL is available
+        if (!string.IsNullOrEmpty(_updateInfo.DownloadUrl))
+        {
+            BtnUpdate_Click(this, new RoutedEventArgs());
+        }
+    }
+
     private async void BtnUpdate_Click(object sender, RoutedEventArgs e)
     {
         if (_isDownloading) return;

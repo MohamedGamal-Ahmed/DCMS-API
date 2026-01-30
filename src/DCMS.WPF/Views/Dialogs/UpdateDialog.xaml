@@ -5,6 +5,7 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         FlowDirection="RightToLeft"
+        ContentRendered="Window_ContentRendered"
         Background="#F5F7FA">
     
     <Grid Margin="30">

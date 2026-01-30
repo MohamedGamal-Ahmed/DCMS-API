@@ -5,6 +5,11 @@ namespace DCMS.WPF.Views;
 
 public partial class MissionInboundView : UserControl
 {
+    public MissionInboundView()
+    {
+        InitializeComponent();
+    }
+
     public MissionInboundView(MissionInboundViewModel viewModel)
     {
         InitializeComponent();

@@ -8,6 +8,7 @@ using DCMS.WPF.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using DCMS.Application.Interfaces;
+using DCMS.WPF.ViewModels.Dialogs;
 
 namespace DCMS.WPF.ViewModels;
 
@@ -381,58 +382,53 @@ public class MeetingAgendaViewModel : ViewModelBase
 
     private void ExecuteExportReport(object? parameter)
     {
-        string period = parameter as string ?? "Today";
-        DateTime start, end;
-        string title;
-
-        switch (period)
+        try
         {
-            case "Week":
-                // Calculate week range (starting from current day or start of week?)
-                // Usually start of current week
-                int diff = (7 + (DateTime.Today.DayOfWeek - DayOfWeek.Sunday)) % 7;
-                start = DateTime.Today.AddDays(-1 * diff).Date;
-                end = start.AddDays(7).AddSeconds(-1);
-                title = "أجندة اجتماعات الأسبوع";
-                break;
-            case "Month":
-                start = new DateTime(CurrentDate.Year, CurrentDate.Month, 1);
-                end = start.AddMonths(1).AddSeconds(-1);
-                title = $"أجندة اجتماعات شهر {CurrentDate:MMMM yyyy}";
-                break;
-            case "Today":
-            default:
-                start = DateTime.Today;
-                end = DateTime.Today.AddDays(1).AddSeconds(-1);
-                title = "أجندة اجتماعات اليوم";
-                break;
-        }
+            var exportVM = _serviceProvider.GetRequiredService<MeetingExportOptionsViewModel>();
+            var dialog = new Views.Dialogs.MeetingExportOptionsView(exportVM);
 
-        // Filter meetings from local cache if possible
-        var reportMeetings = _currentMonthMeetings
-            .Where(m => m.StartDateTime >= start && m.StartDateTime <= end)
-            .OrderBy(m => m.StartDateTime)
-            .ToList();
-
-        if (!reportMeetings.Any())
-        {
-            MessageBox.Show("لا توجد اجتماعات في الفترة المختارة للتصدير.", "تنبيه", 
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var saveFileDialog = new Microsoft.Win32.SaveFileDialog
-        {
-            Filter = "PDF Files (*.pdf)|*.pdf",
-            FileName = $"Agenda_{period}_{DateTime.Now:yyyyMMdd}.pdf",
-            Title = "حفظ أجندة الاجتماعات"
-        };
-
-        if (saveFileDialog.ShowDialog() == true)
-        {
-            try
+            if (System.Windows.Application.Current.MainWindow != null && System.Windows.Application.Current.MainWindow != dialog)
             {
-                if (period == "Month")
+                dialog.Owner = System.Windows.Application.Current.MainWindow;
+            }
+
+            dialog.ShowDialog();
+
+            if (exportVM.IsCancelled) return;
+
+            DateTime start = exportVM.StartDate;
+            DateTime end = exportVM.EndDate;
+            string title = "أجندة الاجتماعات";
+
+            // Filter meetings (Local Cache)
+            // Note: Cache contains UTC dates, comparison should be UTC
+            var startUtc = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            var endUtc = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
+            var reportMeetings = _currentMonthMeetings
+                .Where(m => m.StartDateTime >= startUtc && m.StartDateTime <= endUtc)
+                .OrderBy(m => m.StartDateTime)
+                .ToList();
+
+            if (!reportMeetings.Any())
+            {
+                MessageBox.Show("لا توجد اجتماعات في الفترة المختارة للتصدير.", "تنبيه", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PDF Files (*.pdf)|*.pdf",
+                FileName = $"Agenda_{start:yyyyMMdd}-{end:yyyyMMdd}.pdf",
+                Title = "حفظ أجندة الاجتماعات"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                // Use month or day/week logic based on date range
+                bool isMonthExport = (end - start).TotalDays > 20;
+                if (isMonthExport)
                 {
                     _reportingService.GenerateMonthlyCalendarReport(saveFileDialog.FileName, title, reportMeetings, start);
                 }
@@ -444,11 +440,11 @@ public class MeetingAgendaViewModel : ViewModelBase
                 MessageBox.Show("تم تصدير الأجندة بنجاح!", "تم بنجاح", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"خطأ أثناء تصدير التقرير: {ex.Message}", "خطأ", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"خطأ أثناء تصدير التقرير: {ex.Message}", "خطأ", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

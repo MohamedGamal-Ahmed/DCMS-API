@@ -36,8 +36,14 @@ public class OutboundDetailsViewModel : ViewModelBase
         SaveReplyAttachmentCommand = new RelayCommand(ExecuteSaveReplyAttachment);
         OpenTimelineAttachmentCommand = new RelayCommand(ExecuteOpenTimelineAttachment);
         
+        DeleteCommand = new RelayCommand(ExecuteDelete, _ => IsAdmin);
+        
         _ = LoadDetailsAsync();
     }
+
+    public bool IsAdmin => _currentUserService.CurrentUser?.Role == Domain.Enums.UserRole.Admin || _currentUserService.CurrentUser?.Role == Domain.Enums.UserRole.OfficeManager;
+
+    public ICommand DeleteCommand { get; }
 
     public Outbound Outbound
     {
@@ -232,6 +238,29 @@ public class OutboundDetailsViewModel : ViewModelBase
     }
 
     // ... existing Execute methods ...
+
+    private async void ExecuteDelete(object? param)
+    {
+        var result = MessageBox.Show("هل أنت متأكد من حذف هذا الموضوع الصادر؟ لا يمكن التراجع عن هذا الإجراء.", "تأكيد الحذف", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var outbound = await context.Outbounds.FindAsync(Outbound.Id);
+            if (outbound != null)
+            {
+                context.Outbounds.Remove(outbound);
+                await context.SaveChangesAsync();
+                MessageBox.Show("تم حذف الموضوع بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
+                ExecuteClose(null);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"خطأ في الحذف: {ex.Message}");
+        }
+    }
 
     private void ExecuteClose(object? param)
     {

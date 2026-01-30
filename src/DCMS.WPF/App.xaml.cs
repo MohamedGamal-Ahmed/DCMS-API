@@ -6,6 +6,8 @@ using System.Windows;
 using System.IO;
 using DCMS.Infrastructure.Services;
 using DCMS.WPF.Services;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DCMS.WPF;
 
@@ -42,7 +44,7 @@ public partial class App : System.Windows.Application
             // Build configuration using multi-layered approach
             var builder = new ConfigurationBuilder();
             
-            // 1. Load defaults from Embedded Resource
+            // 1. Load defaults from Embedded Resource (Now contains production keys)
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
             using (var stream = assembly.GetManifestResourceStream("DCMS.WPF.appsettings.json"))
             {
@@ -51,12 +53,9 @@ public partial class App : System.Windows.Application
                     builder.AddJsonStream(stream);
                 }
                 
-                // 2. Load from appsettings.json on disk (if exists)
+                // 2. Load from appsettings.json on disk (if exists, for manual overrides)
                 builder.SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-                
-                // 3. Load from appsettings.Local.json on disk (if exists)
-                builder.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
                 
                 Configuration = builder.Build();
             }
@@ -65,8 +64,8 @@ public partial class App : System.Windows.Application
             var connectionStringCheck = Configuration.GetConnectionString("DefaultConnection");
             if (string.IsNullOrWhiteSpace(connectionStringCheck) || connectionStringCheck.Contains("YOUR_") || connectionStringCheck.Contains("Default_"))
             {
-                MessageBox.Show("خطأ: لم يتم العثور على سلسلة اتصال قاعدة البيانات (Connection String).\n\nيرجى التأكد من إعداد ملف appsettings.Local.json بشكل صحيح.", 
-                    "خطأ في الإعدادات", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("خطأ: لم يتم العثور على بيانات الاتصال بقاعدة البيانات داخل البرمجية.", 
+                    "خطأ في الإعدادات", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
             }
@@ -84,50 +83,73 @@ public partial class App : System.Windows.Application
                 try
                 {
                     var lockFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".db_lock");
-                    var currentVersion = assembly.GetName().Version?.ToString() ?? "1.1.9";
-                    bool shouldRun = true;
+                    var currentVersion = assembly.GetName().Version?.ToString() ?? "1.3.0";
+                    
+                    // RE TRY LOGIC for Neon auto-wake during migration
+                    int migrationRetries = 0;
+                    const int maxMigrationRetries = 5;
+                    bool migrationSuccess = false;
 
-                    if (File.Exists(lockFilePath))
+                    while (migrationRetries < maxMigrationRetries && !migrationSuccess)
                     {
-                        var content = File.ReadAllText(lockFilePath).Split('|');
-                        if (content.Length == 2)
+                        try 
                         {
-                            var lastRunDate = content[0];
-                            var lastVersion = content[1];
-                            if (lastRunDate == DateTime.UtcNow.ToString("yyyyMMdd") && lastVersion == currentVersion)
+                            if (dbContext.Database.CanConnect())
                             {
-                                shouldRun = false;
+                                bool shouldRun = true;
+                                if (File.Exists(lockFilePath))
+                                {
+                                    var content = File.ReadAllText(lockFilePath).Split('|');
+                                    if (content.Length == 2 && content[0] == DateTime.UtcNow.ToString("yyyyMMdd") && content[1] == currentVersion)
+                                    {
+                                        shouldRun = false;
+                                    }
+                                }
+
+                                bool isNewDb = false;
+                                try { isNewDb = !dbContext.Users.Any(); } catch { isNewDb = true; }
+
+                                if (shouldRun || isNewDb)
+                                {
+                                    dbContext.Database.Migrate();
+                                    
+                                    var sql = @"
+                                        DO $$ 
+                                        BEGIN 
+                                            CREATE SCHEMA IF NOT EXISTS dcms;
+                                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='original_attachment_url') THEN
+                                                ALTER TABLE dcms.outbound ADD COLUMN original_attachment_url TEXT;
+                                            END IF;
+                                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='reply_attachment_url') THEN
+                                                ALTER TABLE dcms.outbound ADD COLUMN reply_attachment_url TEXT;
+                                            END IF;
+                                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='online_meeting_link') THEN
+                                                ALTER TABLE dcms.meetings ADD COLUMN online_meeting_link TEXT;
+                                            END IF;
+                                            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='public_key_credential') THEN
+                                                ALTER TABLE dcms.users ADD COLUMN public_key_credential TEXT;
+                                            END IF;
+                                        END $$;";
+                                    dbContext.Database.ExecuteSqlRaw(sql);
+                                    
+                                    File.WriteAllText(lockFilePath, $"{DateTime.UtcNow:yyyyMMdd}|{currentVersion}");
+                                }
+
+                                SeedUserIfEmpty(dbContext);
+                                migrationSuccess = true;
+                            }
+                            else 
+                            { 
+                                throw new Exception("Database not ready yet"); 
                             }
                         }
-                    }
-
-                    if (shouldRun && dbContext.Database.CanConnect())
-                    {
-                        dbContext.Database.Migrate();
-                        
-                        // Self-healing: Ensure required columns exist
-                        var sql = @"
-                            DO $$ 
-                            BEGIN 
-                                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='original_attachment_url') THEN
-                                    ALTER TABLE dcms.outbound ADD COLUMN original_attachment_url TEXT;
-                                END IF;
-                                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='reply_attachment_url') THEN
-                                    ALTER TABLE dcms.outbound ADD COLUMN reply_attachment_url TEXT;
-                                END IF;
-                                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='online_meeting_link') THEN
-                                    ALTER TABLE dcms.meetings ADD COLUMN online_meeting_link TEXT;
-                                END IF;
-                            END $$;";
-                        dbContext.Database.ExecuteSqlRaw(sql);
-                        
-                        // Save lock state
-                        File.WriteAllText(lockFilePath, $"{DateTime.UtcNow:yyyyMMdd}|{currentVersion}");
-                        System.Diagnostics.Debug.WriteLine("[MIGRATION] Database migrations and self-healing applied.");
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("[MIGRATION] Scaled back: Migrations already run today or version hasn't changed.");
+                        catch (Exception)
+                        {
+                            migrationRetries++;
+                            if (migrationRetries >= maxMigrationRetries) throw;
+                            System.Diagnostics.Debug.WriteLine($"[MIGRATION] DB asleep, retrying {migrationRetries}/{maxMigrationRetries}...");
+                            await Task.Delay(3000 * migrationRetries); 
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -220,6 +242,8 @@ public partial class App : System.Windows.Application
         services.AddTransient<ViewModels.AddMeetingDialogViewModel>();
         services.AddTransient<Views.SearchAndFollowUpView>();
         services.AddTransient<ViewModels.SearchAndFollowUpViewModel>();
+        services.AddTransient<Views.Dialogs.MeetingExportOptionsView>();
+        services.AddTransient<ViewModels.Dialogs.MeetingExportOptionsViewModel>();
         services.AddTransient<Views.UserManagementView>();
         services.AddTransient<ViewModels.UserManagementViewModel>();
         services.AddTransient<Views.AuditLogView>();
@@ -309,5 +333,47 @@ public partial class App : System.Windows.Application
         {
             System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
         }
+    }
+    private void SeedUserIfEmpty(DCMSDbContext context)
+    {
+        try
+        {
+            // Ensure schema exists and check if table is accessible
+            // If the table doesn't exist yet (migration failed), this will catch and log
+            if (!context.Users.Any())
+            {
+                var adminUser = new Domain.Entities.User
+                {
+                    Username = "admin",
+                    PasswordHash = HashPassword("admin123"),
+                    Role = Domain.Enums.UserRole.Admin,
+                    IsActive = true,
+                    FullName = "System Administrator",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                context.Users.Add(adminUser);
+                context.SaveChanges();
+                System.Diagnostics.Debug.WriteLine("[SEED] Default admin user created successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Specifically log relation missing issues for UI diagnosis
+            System.Diagnostics.Debug.WriteLine($"[SEED ERROR] Failed to seed default user: {ex.Message}");
+            if (ex.Message.Contains("relation") && ex.Message.Contains("does not exist"))
+            {
+                System.Diagnostics.Debug.WriteLine("[SEED ERROR] Database tables have not been created yet. Please check migrations.");
+            }
+        }
+    }
+
+    private string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
     }
 }

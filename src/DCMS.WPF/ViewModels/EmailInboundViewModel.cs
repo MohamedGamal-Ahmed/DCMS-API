@@ -15,6 +15,7 @@ namespace DCMS.WPF.ViewModels;
 
 public class EmailInboundViewModel : ViewModelBase
 {
+    public string Title => "إضافة إيميل وارد";
     private readonly IDbContextFactory<DCMSDbContext> _contextFactory;
     private readonly NotificationService _notificationService;
     private readonly NumberingService _numberingService;
@@ -36,6 +37,7 @@ public class EmailInboundViewModel : ViewModelBase
         _numberingService = numberingService;
         SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         ClearCommand = new RelayCommand(ExecuteClear);
+        CancelCommand = new RelayCommand(_ => OnRequestClose());
         
         ResponsibleEngineerSelector = new EngineerSelectorViewModel(_contextFactory, responsibleEngineersOnly: true); // 5 names only
         TransferredToSelector = new EngineerSelectorViewModel(_contextFactory, responsibleEngineersOnly: false); // All 90+ names
@@ -61,6 +63,7 @@ public class EmailInboundViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand CancelCommand { get; }
 
     private bool CanExecuteSave(object? parameter) => !string.IsNullOrWhiteSpace(Subject) && !IsSaving;
 
@@ -175,6 +178,7 @@ public class EmailInboundViewModel : ViewModelBase
             
             ExecuteClear(null);
             LoadNextSubjectNumber(); 
+            OnRequestClose();
         }
         catch (Exception ex)
         {

@@ -18,6 +18,7 @@ namespace DCMS.WPF.ViewModels;
 
 public class PostaInboundViewModel : ViewModelBase
 {
+    public string Title => "إضافة بوسطة وارد";
     private readonly IDbContextFactory<DCMSDbContext> _contextFactory;
     private readonly NotificationService _notificationService;
     private readonly Services.CurrentUserService _currentUserService;
@@ -50,6 +51,7 @@ public class PostaInboundViewModel : ViewModelBase
 
         SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         ClearCommand = new RelayCommand(ExecuteClear);
+        CancelCommand = new RelayCommand(_ => OnRequestClose());
         ManageCodesCommand = new RelayCommand(ExecuteManageCodes);
         
         ResponsibleEngineerSelector = new EngineerSelectorViewModel(_contextFactory, responsibleEngineersOnly: true);
@@ -121,6 +123,7 @@ public class PostaInboundViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand CancelCommand { get; }
     public ICommand ManageCodesCommand { get; }
 
     public bool IsAdmin => _currentUserService.CurrentUser?.Role == UserRole.Admin || _currentUserService.CurrentUser?.Role == UserRole.OfficeManager;
@@ -198,6 +201,7 @@ public class PostaInboundViewModel : ViewModelBase
             _notificationService.Success($"✅ تم الحفظ بنجاح! رقم الوارد: {generatedNumber}");
             await _notificationService.AddNotification($"تم إضافة وارد جديد بواسطة {creatorName}: {inbound.Subject}", inbound.Id.ToString(), NotificationType.Success);
             ExecuteClear(null);
+            OnRequestClose();
         }
         catch (Exception ex)
         {

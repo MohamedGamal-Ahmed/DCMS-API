@@ -55,6 +55,7 @@ public partial class SearchAndFollowUpViewModel : ViewModelBase
     [ObservableProperty] private int _selectedYear;
     [ObservableProperty] private string _searchSubjectNumber = string.Empty;
     [ObservableProperty] private string _searchResponsibleEngineer = string.Empty;
+    [ObservableProperty] private ViewModelBase? _activeEntryViewModel;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
@@ -297,4 +298,54 @@ public partial class SearchAndFollowUpViewModel : ViewModelBase
             finally { IsBusy = false; }
         }
     }
+
+    [RelayCommand]
+    private void OpenInboundForm(string type)
+    {
+        try
+        {
+            ViewModelBase? viewModel = type switch
+            {
+                "Posta" or "بوسطة" => _serviceProvider.GetRequiredService<PostaInboundViewModel>(),
+                "Email" or "إيميل" => _serviceProvider.GetRequiredService<EmailInboundViewModel>(),
+                "Request" or "طلبات" or "شكاوى" => _serviceProvider.GetRequiredService<RequestInboundViewModel>(),
+                "Mission" or "مأموريات" or "عهدة" or "تفويضات" => _serviceProvider.GetRequiredService<MissionInboundViewModel>(),
+                "Contract" or "عقود" => _serviceProvider.GetRequiredService<ContractInboundViewModel>(),
+                _ => null
+            };
+
+            if (viewModel != null)
+            {
+                viewModel.RequestClose += () =>
+                {
+                    ActiveEntryViewModel = null;
+                    _ = Search(null);
+                };
+                ActiveEntryViewModel = viewModel;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"خطأ في فتح النافذة ({type}): {ex.Message}\n{ex.InnerException?.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenOutboundForm()
+    {
+        var viewModel = _serviceProvider.GetRequiredService<PostaOutboundViewModel>();
+        viewModel.RequestClose += () =>
+        {
+            ActiveEntryViewModel = null;
+            _ = Search(null);
+        };
+        ActiveEntryViewModel = viewModel;
+    }
+
+    [RelayCommand]
+    private void CloseEntryForm()
+    {
+        ActiveEntryViewModel = null;
+    }
+
 }

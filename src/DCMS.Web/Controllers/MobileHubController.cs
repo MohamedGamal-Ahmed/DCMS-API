@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DCMS.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -153,30 +154,69 @@ public class MobileHubController : Controller
 
     private async Task<object> GetAppDataAsync(int? userId = null)
     {
-        // 1. Fetch Latest Correspondences with responsible engineer info
+        // 1. Fetch Latest Inbounds
         var inbounds = await _context.Inbounds
             .Include(i => i.ResponsibleEngineers)
             .ThenInclude(re => re.Engineer)
-            .OrderByDescending(i => i.CreatedAt)
-            .Take(50)
-            .Select(i => new
+            .OrderByDescending(i => i.InboundDate)
+            .Take(200)
+            .Select(i => new MobileCorrespondenceDto
             {
-                id = i.Id,
-                subject = i.Subject,
-                referenceNumber = i.SubjectNumber,
-                status = i.Status == CorrespondenceStatus.New ? "New" : "Processed",
-                date = i.CreatedAt.ToString("yyyy-MM-dd"),
-                // Get the responsible engineer name (first one from the junction table)
-                responsibleEngineer = i.ResponsibleEngineers
+                Id = i.Id,
+                Subject = i.Subject,
+                ReferenceNumber = i.SubjectNumber,
+                Status = i.Status == CorrespondenceStatus.New ? "New" : "Processed",
+                Date = i.InboundDate.ToString("yyyy-MM-dd"),
+                ResponsibleEngineer = i.ResponsibleEngineers
                     .Select(re => re.Engineer.FullName)
                     .FirstOrDefault() ?? i.ResponsibleEngineer ?? "غير محدد",
-                // Get attachment URL (use OriginalAttachmentUrl or AttachmentUrl)
-                attachmentUrl = !string.IsNullOrEmpty(i.OriginalAttachmentUrl) 
-                    ? i.OriginalAttachmentUrl 
-                    : i.AttachmentUrl,
-                category = "Inbound"
+                AttachmentUrl = !string.IsNullOrEmpty(i.OriginalAttachmentUrl) ? i.OriginalAttachmentUrl : i.AttachmentUrl,
+                OriginalAttachmentUrl = i.OriginalAttachmentUrl,
+                ReplyAttachmentUrl = i.ReplyAttachmentUrl,
+                Description = i.Reply ?? (i.FromEntity != null ? $"وارد من: {i.FromEntity}" : "لا توجد تفاصيل"),
+                Category = "Inbound",
+                CreatedAt = i.CreatedAt,
+                SortDate = i.InboundDate,
+                Attachments = new List<MobileAttachmentDto> { 
+                    new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl ?? i.AttachmentUrl, Type = "original" },
+                    new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" }
+                }.Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
             })
             .ToListAsync();
+
+        // 2. Fetch Latest Outbounds
+        var outbounds = await _context.Outbounds
+            .OrderByDescending(o => o.OutboundDate)
+            .Take(200)
+            .Select(o => new MobileCorrespondenceDto
+            {
+                Id = o.Id,
+                Subject = o.Subject,
+                ReferenceNumber = o.SubjectNumber,
+                Status = "Processed",
+                Date = o.OutboundDate.ToString("yyyy-MM-dd"),
+                ResponsibleEngineer = o.ResponsibleEngineer ?? "غير محدد",
+                AttachmentUrl = !string.IsNullOrEmpty(o.OriginalAttachmentUrl) ? o.OriginalAttachmentUrl : (o.AttachmentUrls.FirstOrDefault()),
+                OriginalAttachmentUrl = o.OriginalAttachmentUrl,
+                ReplyAttachmentUrl = o.ReplyAttachmentUrl,
+                Description = $"صادر إلى: {o.ToEntity}" + (string.IsNullOrEmpty(o.TransferredTo) ? "" : $" \nمحول إلى: {o.TransferredTo}"),
+                Category = "Outbound",
+                CreatedAt = o.CreatedAt,
+                SortDate = o.OutboundDate,
+                Attachments = new List<MobileAttachmentDto> { 
+                    new MobileAttachmentDto { Title = "المرفق الأصلي", Url = o.OriginalAttachmentUrl, Type = "original" },
+                    new MobileAttachmentDto { Title = "مرفق الرد", Url = o.ReplyAttachmentUrl, Type = "reply" }
+                }.Concat(o.AttachmentUrls.Select(url => new MobileAttachmentDto { Title = "مرفق إضافي", Url = url, Type = "other" }))
+                 .Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+            })
+            .ToListAsync();
+
+        // Combine, Sort by actual Date, and Take Top 200
+        var correspondences = inbounds
+            .Concat(outbounds)
+            .OrderByDescending(c => c.SortDate)
+            .Take(200)
+            .ToList();
 
         // 2. Fetch ALL Meetings for the year (for calendar view)
         var now = DateTime.UtcNow;
@@ -192,7 +232,7 @@ public class MobileHubController : Controller
                 title = m.Title,
                 time = m.StartDateTime.ToString("HH:mm"),
                 date = m.StartDateTime.ToString("yyyy-MM-dd"),
-                startTime = DateTime.SpecifyKind(m.StartDateTime, DateTimeKind.Utc),
+                startTime = m.StartDateTime,
                 location = m.Location ?? "غير محدد",
                 // Count attendees from comma-separated string
                 participants = string.IsNullOrEmpty(m.Attendees) 
@@ -242,7 +282,7 @@ public class MobileHubController : Controller
         return new
         {
             user = userInfo ?? new { name = "زائر", role = "Guest", id = 0 },
-            correspondences = inbounds,
+            correspondences = correspondences,
             meetings = meetings,
             stats = statsInfo ?? new { meetingsToday = 0, pendingIssues = 0, completedReports = 0 }
         };
@@ -253,4 +293,61 @@ public class MobileLoginRequest
 {
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
+}
+
+public class MobileCorrespondenceDto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    
+    [JsonPropertyName("subject")]
+    public string Subject { get; set; } = "";
+    
+    [JsonPropertyName("referenceNumber")]
+    public string ReferenceNumber { get; set; } = "";
+    
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = "";
+    
+    [JsonPropertyName("date")]
+    public string Date { get; set; } = "";
+    
+    [JsonPropertyName("responsibleEngineer")]
+    public string ResponsibleEngineer { get; set; } = "";
+    
+    [JsonPropertyName("attachmentUrl")]
+    public string? AttachmentUrl { get; set; }
+    
+    [JsonPropertyName("originalAttachmentUrl")]
+    public string? OriginalAttachmentUrl { get; set; }
+    
+    [JsonPropertyName("replyAttachmentUrl")]
+    public string? ReplyAttachmentUrl { get; set; }
+    
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+    
+    [JsonPropertyName("category")]
+    public string Category { get; set; } = "";
+    
+    [JsonPropertyName("createdAt")]
+    public DateTime CreatedAt { get; set; }
+    
+    [JsonIgnore]
+    public DateTime SortDate { get; set; }
+    
+    [JsonPropertyName("attachments")]
+    public List<MobileAttachmentDto> Attachments { get; set; } = new();
+}
+
+public class MobileAttachmentDto
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = "";
+    
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+    
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
 }

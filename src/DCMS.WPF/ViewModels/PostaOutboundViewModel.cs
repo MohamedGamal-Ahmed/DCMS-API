@@ -14,6 +14,7 @@ namespace DCMS.WPF.ViewModels;
 
 public class PostaOutboundViewModel : ViewModelBase
 {
+    public string Title => "إضافة بوسطة صادر";
     private readonly IDbContextFactory<DCMSDbContext> _contextFactory;
     private readonly NotificationService _notificationService;
     private readonly NumberingService _numberingService;
@@ -41,6 +42,7 @@ public class PostaOutboundViewModel : ViewModelBase
 
         SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         ClearCommand = new RelayCommand(ExecuteClear);
+        CancelCommand = new RelayCommand(_ => OnRequestClose());
         ManageCodesCommand = new RelayCommand(ExecuteManageCodes);
 
         // Initialize Engineer Selectors
@@ -97,6 +99,7 @@ public class PostaOutboundViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand CancelCommand { get; }
     public ICommand ManageCodesCommand { get; }
 
     public bool IsAdmin => _currentUserService.CurrentUser?.Role == UserRole.Admin || _currentUserService.CurrentUser?.Role == UserRole.OfficeManager;
@@ -159,6 +162,7 @@ public class PostaOutboundViewModel : ViewModelBase
 
             ExecuteClear(null);
             LoadNextSubjectNumber();
+            OnRequestClose();
         }
         catch (Exception ex)
         {

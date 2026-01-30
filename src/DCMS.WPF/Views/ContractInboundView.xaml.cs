@@ -5,6 +5,11 @@ namespace DCMS.WPF.Views;
 
 public partial class ContractInboundView : UserControl
 {
+    public ContractInboundView()
+    {
+        InitializeComponent();
+    }
+
     public ContractInboundView(ContractInboundViewModel viewModel)
     {
         InitializeComponent();

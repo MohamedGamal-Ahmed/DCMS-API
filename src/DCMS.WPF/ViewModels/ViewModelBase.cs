@@ -7,6 +7,8 @@ namespace DCMS.WPF.ViewModels;
 
 public class ViewModelBase : ObservableObject
 {
+    public event Action? RequestClose;
+    protected void OnRequestClose() => RequestClose?.Invoke();
 }
 
 public class RelayCommand : ICommand

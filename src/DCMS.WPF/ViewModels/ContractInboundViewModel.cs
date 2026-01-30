@@ -14,6 +14,7 @@ namespace DCMS.WPF.ViewModels;
 
 public class ContractInboundViewModel : ViewModelBase
 {
+    public string Title => "إضافة عقد وارد";
     private readonly IDbContextFactory<DCMSDbContext> _contextFactory;
     private readonly NotificationService _notificationService;
     private readonly NumberingService _numberingService;
@@ -40,6 +41,7 @@ public class ContractInboundViewModel : ViewModelBase
         _numberingService = numberingService;
         SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         ClearCommand = new RelayCommand(ExecuteClear);
+        CancelCommand = new RelayCommand(_ => OnRequestClose());
         
         ResponsibleEngineerSelector = new EngineerSelectorViewModel(_contextFactory, responsibleEngineersOnly: true);
         TransferredToSelector = new EngineerSelectorViewModel(_contextFactory, responsibleEngineersOnly: false);
@@ -77,6 +79,7 @@ public class ContractInboundViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand CancelCommand { get; }
 
     private bool CanExecuteSave(object? parameter) => !string.IsNullOrWhiteSpace(ProjectName) && !IsSaving;
 
@@ -167,6 +170,7 @@ public class ContractInboundViewModel : ViewModelBase
             
             ExecuteClear(null);
             LoadNextSubjectNumber();
+            OnRequestClose();
         }
         catch (Exception ex)
         {

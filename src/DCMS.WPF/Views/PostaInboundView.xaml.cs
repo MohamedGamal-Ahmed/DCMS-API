@@ -5,6 +5,11 @@ namespace DCMS.WPF.Views;
 
 public partial class PostaInboundView : UserControl
 {
+    public PostaInboundView()
+    {
+        InitializeComponent();
+    }
+
     public PostaInboundView(PostaInboundViewModel viewModel)
     {
         InitializeComponent();

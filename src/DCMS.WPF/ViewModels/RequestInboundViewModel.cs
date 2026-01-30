@@ -16,6 +16,7 @@ namespace DCMS.WPF.ViewModels;
 
 public class RequestInboundViewModel : ViewModelBase
 {
+    public string Title => "إضافة طلب / شكوى";
     private readonly IDbContextFactory<DCMSDbContext> _contextFactory;
     private readonly NotificationService _notificationService;
     private readonly NumberingService _numberingService;
@@ -45,6 +46,7 @@ public class RequestInboundViewModel : ViewModelBase
 
         SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         ClearCommand = new RelayCommand(ExecuteClear);
+        CancelCommand = new RelayCommand(_ => OnRequestClose());
         ManageCodesCommand = new RelayCommand(ExecuteManageCodes);
         
         // Initialize collections
@@ -140,6 +142,7 @@ public class RequestInboundViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand CancelCommand { get; }
     public ICommand ManageCodesCommand { get; }
 
     public bool IsAdmin => _currentUserService.CurrentUser?.Role == UserRole.Admin || _currentUserService.CurrentUser?.Role == UserRole.OfficeManager;
@@ -208,6 +211,7 @@ public class RequestInboundViewModel : ViewModelBase
 
             ExecuteClear(null);
             LoadNextSubjectNumber();
+            OnRequestClose();
         }
         catch (Exception ex)
         {

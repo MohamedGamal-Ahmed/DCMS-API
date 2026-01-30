@@ -16,6 +16,7 @@ namespace DCMS.WPF.ViewModels;
 
 public class MissionInboundViewModel : ViewModelBase
 {
+    public string Title => "إضافة مأمورية / عهدة";
     private readonly IDbContextFactory<DCMSDbContext> _contextFactory;
     private readonly NotificationService _notificationService;
     private readonly NumberingService _numberingService;
@@ -44,6 +45,7 @@ public class MissionInboundViewModel : ViewModelBase
 
         SaveCommand = new RelayCommand(ExecuteSave, CanExecuteSave);
         ClearCommand = new RelayCommand(ExecuteClear);
+        CancelCommand = new RelayCommand(_ => OnRequestClose());
         ManageCodesCommand = new RelayCommand(ExecuteManageCodes);
         
         // Initialize collections
@@ -139,6 +141,7 @@ public class MissionInboundViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand CancelCommand { get; }
     public ICommand ManageCodesCommand { get; }
 
     public bool IsAdmin => _currentUserService.CurrentUser?.Role == UserRole.Admin || _currentUserService.CurrentUser?.Role == UserRole.OfficeManager;
@@ -207,6 +210,7 @@ public class MissionInboundViewModel : ViewModelBase
 
             ExecuteClear(null);
             LoadNextSubjectNumber();
+            OnRequestClose();
         }
         catch (Exception ex)
         {

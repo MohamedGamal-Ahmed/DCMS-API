@@ -87,7 +87,7 @@ public class MeetingAgendaReportDocument : BaseReportDocument
                     c.Item().Row(row =>
                     {
                         row.RelativeItem().Text(meeting.Title).FontSize(14).Bold().FontColor(Colors.Blue.Darken2);
-                        row.ConstantItem(100).AlignLeft().Text(meeting.StartDateTime.ToString("yyyy/MM/dd")).FontSize(10).FontColor(Colors.Grey.Darken1);
+                        row.ConstantItem(100).AlignLeft().Text(meeting.StartDateTime.ToLocalTime().ToString("yyyy/MM/dd")).FontSize(10).FontColor(Colors.Grey.Darken1);
                     });
 
                     // Time and Location
@@ -96,7 +96,7 @@ public class MeetingAgendaReportDocument : BaseReportDocument
                         row.RelativeItem().Text(x =>
                         {
                             x.Span("⏱ الوقت: ").SemiBold();
-                            x.Span($"{meeting.StartDateTime:HH:mm} - {meeting.EndDateTime:HH:mm}");
+                            x.Span($"{meeting.StartDateTime.ToLocalTime():HH:mm} - {meeting.EndDateTime.ToLocalTime():HH:mm}");
                             x.Span("    📍 المكان: ").SemiBold();
                             x.Span(meeting.Location ?? "غير محدد");
                         });

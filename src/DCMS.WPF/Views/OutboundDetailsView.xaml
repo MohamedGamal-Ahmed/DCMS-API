@@ -234,6 +234,16 @@
         <!-- Footer Actions -->
         <Border Grid.Row="2" Background="White" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Command="{Binding DeleteCommand}" Content="حذف المراسلة" 
+                        Background="#F44336" Foreground="White" Padding="30,10" BorderThickness="0" Margin="0,0,10,0"
+                        Visibility="{Binding IsAdmin, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+                
                 <Button Command="{Binding CloseCommand}" Content="إغلاق" Background="#9E9E9E" Foreground="White" Padding="30,10" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">

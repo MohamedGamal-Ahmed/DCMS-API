@@ -83,7 +83,7 @@ public class AuditInterceptor : SaveChangesInterceptor
                 auditLog.OldValues = SerializeEntity(entry.OriginalValues.ToObject());
             }
 
-            context.Add(auditLog);
+            // context.Add(auditLog); // Disabled for productivity/storage optimization
         }
     }
 

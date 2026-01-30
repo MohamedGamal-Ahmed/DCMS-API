@@ -108,8 +108,8 @@ public class NotificationService
             CreatedAt = DateTime.UtcNow,
             IsRead = false
         };
-        context.Notifications.Add(notification);
-        await context.SaveChangesAsync();
+        // context.Notifications.Add(notification); // Disabled for productivity/storage optimization
+        // await context.SaveChangesAsync();
         
         NotificationAdded?.Invoke(this, EventArgs.Empty);
     }
@@ -128,6 +128,8 @@ public class NotificationService
 
         foreach (var userId in targetUserIds)
         {
+            // context.Notifications.Add(...) // Disabled for productivity/storage optimization
+            /*
             context.Notifications.Add(new Notification
             {
                 UserId = userId,
@@ -137,9 +139,10 @@ public class NotificationService
                 CreatedAt = DateTime.UtcNow,
                 IsRead = false
             });
+            */
         }
 
-        await context.SaveChangesAsync();
+        // await context.SaveChangesAsync();
         NotificationAdded?.Invoke(this, EventArgs.Empty);
 
         // Also show a toast for the person who triggered it

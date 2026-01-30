@@ -69,7 +69,7 @@ public class BackupService
             .OrderByDescending(x => x.Version)
             .FirstOrDefault();
 
-        if (bestMatch != null && bestMatch.Version >= 17.0)
+        if (bestMatch != null && bestMatch.Version >= 16.0)
         {
             return bestMatch.Path;
         }
@@ -81,7 +81,7 @@ public class BackupService
         }
 
         // Build helpful error message
-        var message = $"لم يتم العثور على {binaryName} الإصدار 17.\n\n";
+        var message = $"لم يتم العثور على {binaryName} الإصدار 16 أو 17.\n\n";
         
         if (bestMatch != null)
         {
@@ -89,9 +89,9 @@ public class BackupService
         }
         
         message += "الحلول الممكنة:\n";
-        message += "1. تثبيت PostgreSQL 17 من: https://www.postgresql.org/download/\n";
-        message += "2. أو تحديد مسار أدوات PostgreSQL 17 يدوياً في ملف appsettings.json:\n";
-        message += "   \"PostgreSQL\": { \"BinPath\": \"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\" }";
+        message += "1. تثبيت PostgreSQL 16 أو 17 من: https://www.postgresql.org/download/\n";
+        message += "2. أو تحديد مسار أدوات PostgreSQL يدوياً في ملف appsettings.json:\n";
+        message += "   \"PostgreSQL\": { \"BinPath\": \"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\bin\" }";
         
         throw new Exception(message);
     }

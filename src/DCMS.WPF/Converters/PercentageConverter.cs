@@ -9,7 +9,11 @@ public class PercentageConverter : IValueConverter
     {
         if (value is double d)
         {
-            return d * 100;
+            if (parameter != null && double.TryParse(parameter.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out double factor))
+            {
+                return d * factor;
+            }
+            return d;
         }
         return 0;
     }

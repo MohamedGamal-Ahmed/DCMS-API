@@ -115,8 +115,8 @@ public class ExcelExportService
         {
             worksheet.Cell(row, 1).Value = item.Title;
             worksheet.Cell(row, 2).Value = item.Description ?? "";
-            worksheet.Cell(row, 3).Value = item.StartDateTime.ToString("yyyy-MM-dd HH:mm");
-            worksheet.Cell(row, 4).Value = item.EndDateTime.ToString("yyyy-MM-dd HH:mm");
+            worksheet.Cell(row, 3).Value = item.StartDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+            worksheet.Cell(row, 4).Value = item.EndDateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
             worksheet.Cell(row, 5).Value = item.Location ?? "";
             worksheet.Cell(row, 6).Value = ""; // Organizer removed
             row++;

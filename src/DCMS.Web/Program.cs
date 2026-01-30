@@ -8,121 +8,143 @@ using DCMS.Application.Interfaces;
 using Telegram.Bot.Types.Enums;
 using Npgsql;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Load appsettings.Local.json (for production secrets like connection strings)
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
-
-
-// --- SAFE DB CONFIGURATION ---
-try 
+// CRASH DIAGNOSTIC WRAPPER
+try
 {
-    var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
-                            ?? builder.Configuration["DATABASE_URL"]
-                            ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    var builder = WebApplication.CreateBuilder(args);
 
-    if (!string.IsNullOrEmpty(rawConnectionString))
+    // Load appsettings.Local.json (for production secrets like connection strings)
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
+
+    // --- SAFE DB CONFIGURATION ---
+    try 
     {
-        string finalConnectionString;
-        if (rawConnectionString.Contains("://"))
+        var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                                ?? builder.Configuration["DATABASE_URL"]
+                                ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+        if (!string.IsNullOrEmpty(rawConnectionString))
         {
-            var uri = new Uri(rawConnectionString);
-            var userInfo = uri.UserInfo.Split(':');
-            var csBuilder = new NpgsqlConnectionStringBuilder
+            string finalConnectionString;
+            if (rawConnectionString.Contains("://"))
             {
-                Host = uri.Host,
-                Port = uri.Port > 0 ? uri.Port : 5432,
-                Username = userInfo[0],
-                Password = userInfo.Length > 1 ? userInfo[1] : null,
-                Database = uri.AbsolutePath.TrimStart('/'),
-                SslMode = SslMode.Require,
-                TrustServerCertificate = true,
-                Pooling = true
-            };
-            finalConnectionString = csBuilder.ToString();
+                var uri = new Uri(rawConnectionString);
+                var userInfo = uri.UserInfo.Split(':');
+                var csBuilder = new NpgsqlConnectionStringBuilder
+                {
+                    Host = uri.Host,
+                    Port = uri.Port > 0 ? uri.Port : 5432,
+                    Username = userInfo[0],
+                    Password = userInfo.Length > 1 ? userInfo[1] : null,
+                    Database = uri.AbsolutePath.TrimStart('/'),
+                    SslMode = SslMode.Require,
+                    TrustServerCertificate = true,
+                    Pooling = true
+                };
+                finalConnectionString = csBuilder.ToString();
+            }
+            else
+            {
+                var csBuilder = new NpgsqlConnectionStringBuilder(rawConnectionString);
+                csBuilder.SslMode = SslMode.Require;
+                csBuilder.TrustServerCertificate = true;
+                csBuilder.Pooling = true;
+                finalConnectionString = csBuilder.ToString();
+            }
+            builder.Services.AddDbContext<DCMSDbContext>(options => options.UseNpgsql(finalConnectionString));
+            // Also add factory for Singleton services like DashboardDataService
+            builder.Services.AddDbContextFactory<DCMSDbContext>(options => options.UseNpgsql(finalConnectionString), ServiceLifetime.Scoped);
         }
-        else
-        {
-            var csBuilder = new NpgsqlConnectionStringBuilder(rawConnectionString);
-            csBuilder.SslMode = SslMode.Require;
-            csBuilder.TrustServerCertificate = true;
-            csBuilder.Pooling = true;
-            finalConnectionString = csBuilder.ToString();
-        }
-        builder.Services.AddDbContext<DCMSDbContext>(options => options.UseNpgsql(finalConnectionString));
     }
+    catch (Exception ex)
+    {
+        System.IO.File.WriteAllText("crash_log.txt", $"DB SETUP FAILED: {ex}");
+        Console.WriteLine($"DB SETUP FAILED (Non-Fatal): {ex.Message}");
+    }
+
+    // --- SERVICES ---
+    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options => {
+            options.LoginPath = "/Account/Login";
+            options.Cookie.Name = "DCMS_Hub_Auth";
+        });
+    builder.Services.AddAuthorization();
+    builder.Services.AddSingleton<DashboardDataService>();
+    builder.Services.AddScoped<ICorrespondenceService, CorrespondenceService>();
+    builder.Services.AddScoped<IMeetingService, MeetingService>();
+    builder.Services.AddScoped<NumberingService>();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentUserService, DCMS.Web.Services.WebCurrentUserService>(); 
+    builder.Services.AddSignalR(); 
+    builder.Services.AddControllersWithViews();
+    builder.Services.AddCors(options => {
+        options.AddPolicy("AllowAll", p => p
+            .WithOrigins(
+                "https://mohamedgamal-ahmed.github.io",
+                "http://localhost:5173",
+                "http://localhost:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+    });
+
+    var app = builder.Build();
+
+    // --- MIDDLEWARE ---
+    app.UseDeveloperExceptionPage();
+    
+    // Path rewriting MUST come before UseStaticFiles
+    app.Use(async (context, next) =>
+    {
+        var path = context.Request.Path.Value;
+        
+        // If requesting /Mobile (without trailing slash or file), serve index.html
+        if (path != null && path.Equals("/Mobile", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Request.Path = "/Mobile/index.html";
+        }
+        
+        await next();
+    });
+    
+    app.UseStaticFiles();
+    app.UseRouting();
+    app.UseCors("AllowAll");
+    app.UseAuthentication(); 
+    app.UseAuthorization();
+
+    app.MapHub<ChatHub>("/chatHub");
+    app.MapControllerRoute(name: "mobile", pattern: "Mobile/{action=Index}/{id?}", defaults: new { controller = "MobileHub" });
+    app.MapDefaultControllerRoute();
+
+    app.MapGet("/", () => $"DCMS LIVE - {DateTime.UtcNow}");
+    app.MapGet("/health", () => Results.Ok("healthy"));
+
+    app.MapGet("/env-check", (IConfiguration config) => {
+        var dbUrl = config["DATABASE_URL"] ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+        return Results.Ok(new {
+            HasDbUrl = !string.IsNullOrEmpty(dbUrl),
+            DbUrlLength = dbUrl?.Length ?? 0,
+            Time = DateTime.UtcNow
+        });
+    });
+
+    app.MapGet("/test-db", async ([Microsoft.AspNetCore.Mvc.FromServices] DCMSDbContext db) => {
+        try {
+            await db.Database.CanConnectAsync();
+            var count = await db.Users.CountAsync();
+            return Results.Ok($"✅ DB Success! Count: {count}");
+        } catch (Exception ex) { return Results.Problem(ex.Message); }
+    });
+
+    app.Run();
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"DB SETUP FAILED (Non-Fatal): {ex.Message}");
+    // Write crash log to file for diagnosis
+    var crashInfo = $"CRASH TIME: {DateTime.UtcNow}\n\nEXCEPTION:\n{ex}\n\nSTACK TRACE:\n{ex.StackTrace}";
+    System.IO.File.WriteAllText("crash_log.txt", crashInfo);
+    throw;
 }
-
-// --- SERVICES ---
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options => {
-        options.LoginPath = "/Account/Login";
-        options.Cookie.Name = "DCMS_Hub_Auth";
-    });
-builder.Services.AddAuthorization();
-builder.Services.AddSingleton<DashboardDataService>();
-builder.Services.AddScoped<ICorrespondenceService, CorrespondenceService>();
-builder.Services.AddScoped<IMeetingService, MeetingService>();
-builder.Services.AddScoped<NumberingService>();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserService, DCMS.Web.Services.WebCurrentUserService>(); 
-builder.Services.AddSignalR(); 
-builder.Services.AddControllersWithViews();
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", p => p.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
-});
-
-var app = builder.Build();
-
-// --- MIDDLEWARE ---
-app.UseDeveloperExceptionPage();
-app.UseStaticFiles();
-app.UseRouting();
-app.UseCors("AllowAll");
-app.UseAuthentication(); 
-app.UseAuthorization();
-
-// --- ROUTES ---
-// Serve Mobile SPA (no auth required for static files)
-app.Use(async (context, next) =>
-{
-    var path = context.Request.Path.Value;
-    
-    // If requesting /Mobile (without trailing slash or file), serve index.html
-    if (path != null && path.Equals("/Mobile", StringComparison.OrdinalIgnoreCase))
-    {
-        context.Request.Path = "/Mobile/index.html";
-    }
-    
-    await next();
-});
-
-app.MapHub<ChatHub>("/chatHub");
-app.MapControllerRoute(name: "mobile", pattern: "Mobile/{action=Index}/{id?}", defaults: new { controller = "MobileHub" });
-app.MapDefaultControllerRoute();
-
-app.MapGet("/", () => $"DCMS LIVE - {DateTime.UtcNow}");
-app.MapGet("/health", () => Results.Ok("healthy"));
-
-app.MapGet("/env-check", (IConfiguration config) => {
-    var dbUrl = config["DATABASE_URL"] ?? Environment.GetEnvironmentVariable("DATABASE_URL");
-    return Results.Ok(new {
-        HasDbUrl = !string.IsNullOrEmpty(dbUrl),
-        DbUrlLength = dbUrl?.Length ?? 0,
-        Time = DateTime.UtcNow
-    });
-});
-
-app.MapGet("/test-db", async (DCMSDbContext db) => {
-    try {
-        await db.Database.CanConnectAsync();
-        var count = await db.Users.CountAsync();
-        return Results.Ok($"✅ DB Success! Count: {count}");
-    } catch (Exception ex) { return Results.Problem(ex.Message); }
-});
-
-app.Run();

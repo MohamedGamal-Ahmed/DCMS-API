@@ -10,11 +10,13 @@ public class CurrentUserService : ICurrentUserService
 {
     private User? _currentUser;
 
-    public User CurrentUser
+    public User? CurrentUser
     {
-        get => _currentUser ?? throw new InvalidOperationException("No user is currently logged in");
+        get => _currentUser;
         set => _currentUser = value;
     }
+    
+    public User GetCurrentUserOrThrow() => _currentUser ?? throw new InvalidOperationException("No user is currently logged in");
 
     public bool IsLoggedIn => _currentUser != null;
 
