@@ -170,9 +170,6 @@ public class MobileHubController : Controller
                 ResponsibleEngineer = i.ResponsibleEngineers
                     .Select(re => re.Engineer.FullName)
                     .FirstOrDefault() ?? i.ResponsibleEngineer ?? "غير محدد",
-                AttachmentUrl = !string.IsNullOrEmpty(i.OriginalAttachmentUrl) ? i.OriginalAttachmentUrl : i.AttachmentUrl,
-                OriginalAttachmentUrl = i.OriginalAttachmentUrl,
-                ReplyAttachmentUrl = i.ReplyAttachmentUrl,
                 Description = i.Reply ?? (i.FromEntity != null ? $"وارد من: {i.FromEntity}" : "لا توجد تفاصيل"),
                 Category = "Inbound",
                 CreatedAt = i.CreatedAt,
@@ -196,9 +193,6 @@ public class MobileHubController : Controller
                 Status = "Processed",
                 Date = o.OutboundDate.ToString("yyyy-MM-dd"),
                 ResponsibleEngineer = o.ResponsibleEngineer ?? "غير محدد",
-                AttachmentUrl = !string.IsNullOrEmpty(o.OriginalAttachmentUrl) ? o.OriginalAttachmentUrl : (o.AttachmentUrls.FirstOrDefault()),
-                OriginalAttachmentUrl = o.OriginalAttachmentUrl,
-                ReplyAttachmentUrl = o.ReplyAttachmentUrl,
                 Description = $"صادر إلى: {o.ToEntity}" + (string.IsNullOrEmpty(o.TransferredTo) ? "" : $" \nمحول إلى: {o.TransferredTo}"),
                 Category = "Outbound",
                 CreatedAt = o.CreatedAt,
@@ -211,7 +205,7 @@ public class MobileHubController : Controller
             })
             .ToListAsync();
 
-        // Combine, Sort by actual Date, and Take Top 200
+        // Combine, Sort by actual Date, and Take Top 400 total (200 of each or combined sorted)
         var correspondences = inbounds
             .Concat(outbounds)
             .OrderByDescending(c => c.SortDate)
