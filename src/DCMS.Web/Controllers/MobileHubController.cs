@@ -170,10 +170,10 @@ public class MobileHubController : Controller
     {
         // 1. Fetch Latest Inbounds (Raw data)
         var inboundsRaw = await _context.Inbounds
-            .Include(i => i.ResponsibleEngineers)
-            .ThenInclude(re => re.Engineer)
+            .Include(i => i.ResponsibleEngineers).ThenInclude(re => re.Engineer)
+            .Include(i => i.Transfers).ThenInclude(t => t.Engineer)
             .OrderByDescending(i => i.InboundDate)
-            .Take(200)
+            .Take(500)
             .Select(i => new 
             {
                 i.Id,
@@ -189,32 +189,53 @@ public class MobileHubController : Controller
                 i.CreatedAt,
                 i.OriginalAttachmentUrl,
                 i.AttachmentUrl,
-                i.ReplyAttachmentUrl
+                i.ReplyAttachmentUrl,
+                Transfers = i.Transfers.Select(t => new { t.Engineer.FullName, t.TransferAttachmentUrl }).ToList()
             })
             .ToListAsync();
 
-        var inbounds = inboundsRaw.Select(i => new MobileCorrespondenceDto
-        {
-            Id = i.Id,
-            Subject = i.Subject,
-            ReferenceNumber = i.SubjectNumber,
-            Status = i.Status == CorrespondenceStatus.New ? "New" : "Processed",
-            Date = i.InboundDate.ToString("yyyy-MM-dd"),
-            ResponsibleEngineer = i.ResponsibleEngineer,
-            Description = i.Reply ?? (i.FromEntity != null ? $"وارد من: {i.FromEntity}" : "لا توجد تفاصيل"),
-            Category = "Inbound",
-            CreatedAt = i.CreatedAt,
-            SortDate = i.InboundDate,
-            Attachments = new List<MobileAttachmentDto> { 
-                new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl ?? i.AttachmentUrl, Type = "original" },
+        var inbounds = inboundsRaw.Select(i => {
+            var transferNames = i.Transfers.Select(t => t.FullName).Distinct().ToList();
+            var transferInfo = transferNames.Any() 
+                ? "\nتحويلات: " + string.Join("، ", transferNames) 
+                : "";
+            
+            var attachments = new List<MobileAttachmentDto> { 
+                new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl, Type = "original" },
+                new MobileAttachmentDto { Title = "مرفق التأشيرة/التحويل", Url = i.AttachmentUrl, Type = "transfer" },
                 new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" }
-            }.Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+            };
+            
+            // Add attachments from individual transfers
+            foreach(var t in i.Transfers.Where(t => !string.IsNullOrEmpty(t.TransferAttachmentUrl)))
+            {
+                attachments.Add(new MobileAttachmentDto { 
+                    Title = $"مرفق تحويل ({t.FullName})", 
+                    Url = t.TransferAttachmentUrl, 
+                    Type = "transfer" 
+                });
+            }
+
+            return new MobileCorrespondenceDto
+            {
+                Id = i.Id,
+                Subject = i.Subject,
+                ReferenceNumber = i.SubjectNumber,
+                Status = i.Status == CorrespondenceStatus.New ? "New" : "Processed",
+                Date = i.InboundDate.ToString("yyyy-MM-dd"),
+                ResponsibleEngineer = i.ResponsibleEngineer,
+                Description = (i.Reply ?? (i.FromEntity != null ? $"وارد من: {i.FromEntity}" : "لا توجد تفاصيل")) + transferInfo,
+                Category = "Inbound",
+                CreatedAt = i.CreatedAt,
+                SortDate = i.InboundDate,
+                Attachments = attachments.Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+            };
         }).ToList();
 
         // 2. Fetch Latest Outbounds (Raw data)
         var outboundsRaw = await _context.Outbounds
             .OrderByDescending(o => o.OutboundDate)
-            .Take(200)
+            .Take(500)
             .Select(o => new 
             {
                 o.Id,

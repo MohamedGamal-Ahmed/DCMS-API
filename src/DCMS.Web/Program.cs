@@ -109,6 +109,15 @@ try
                 DO $$ 
                 BEGIN 
                     CREATE SCHEMA IF NOT EXISTS dcms;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inbound' AND column_name='original_attachment_url') THEN
+                        ALTER TABLE dcms.inbound ADD COLUMN original_attachment_url TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inbound' AND column_name='reply_attachment_url') THEN
+                        ALTER TABLE dcms.inbound ADD COLUMN reply_attachment_url TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inbound_transfers' AND column_name='transfer_attachment_url') THEN
+                        ALTER TABLE dcms.inbound_transfers ADD COLUMN transfer_attachment_url TEXT;
+                    END IF;
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='original_attachment_url') THEN
                         ALTER TABLE dcms.outbound ADD COLUMN original_attachment_url TEXT;
                     END IF;

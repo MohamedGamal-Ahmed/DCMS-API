@@ -82,6 +82,8 @@ public class DCMSDbContext : DbContext
                     v => v.ToString(),
                     v => Enum.Parse<CorrespondenceStatus>(v, true));
             entity.Property(e => e.AttachmentUrl).HasColumnName("attachment_url");
+            entity.Property(e => e.OriginalAttachmentUrl).HasColumnName("original_attachment_url");
+            entity.Property(e => e.ReplyAttachmentUrl).HasColumnName("reply_attachment_url");
             entity.Property(e => e.CreatedByUserId).HasColumnName("created_by");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
