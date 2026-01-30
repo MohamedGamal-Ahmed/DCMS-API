@@ -92,6 +92,41 @@ try
 
     var app = builder.Build();
 
+    // --- AUTO-MIGRATION & SCHEMA PATCHING ---
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<DCMSDbContext>();
+        try
+        {
+            // Ensure DB is migrated
+            if (dbContext.Database.GetPendingMigrations().Any())
+            {
+                dbContext.Database.Migrate();
+            }
+
+            // Explicitly patch columns if missing (Neon/MonsterASP self-healing)
+            var sql = @"
+                DO $$ 
+                BEGIN 
+                    CREATE SCHEMA IF NOT EXISTS dcms;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='original_attachment_url') THEN
+                        ALTER TABLE dcms.outbound ADD COLUMN original_attachment_url TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='outbound' AND column_name='reply_attachment_url') THEN
+                        ALTER TABLE dcms.outbound ADD COLUMN reply_attachment_url TEXT;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='online_meeting_link') THEN
+                        ALTER TABLE dcms.meetings ADD COLUMN online_meeting_link TEXT;
+                    END IF;
+                END $$;";
+            dbContext.Database.ExecuteSqlRaw(sql);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AUTO-MIGRATION ERROR] {ex.Message}");
+        }
+    }
+
     // --- MIDDLEWARE ---
     app.UseDeveloperExceptionPage();
     

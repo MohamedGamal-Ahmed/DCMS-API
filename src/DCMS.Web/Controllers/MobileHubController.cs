@@ -35,13 +35,20 @@ public class MobileHubController : Controller
     [Authorize]
     public async Task<IActionResult> Index()
     {
-        var data = await GetAppDataAsync();
-        ViewBag.AppData = JsonSerializer.Serialize(data, new JsonSerializerOptions 
-        { 
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
-        });
-        
-        return View();
+        try
+        {
+            var data = await GetAppDataAsync();
+            ViewBag.AppData = JsonSerializer.Serialize(data, new JsonSerializerOptions 
+            { 
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            });
+            
+            return View();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
     /// <summary>
     /// Debug: Check if user exists
@@ -148,8 +155,15 @@ public class MobileHubController : Controller
     [AllowAnonymous]
     public async Task<IActionResult> GetData([FromQuery] int? userId = null)
     {
-        var data = await GetAppDataAsync(userId);
-        return Json(data);
+        try
+        {
+            var data = await GetAppDataAsync(userId);
+            return Json(data);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = "Error fetching data: " + ex.Message, detail = ex.ToString() });
+        }
     }
 
     private async Task<object> GetAppDataAsync(int? userId = null)
