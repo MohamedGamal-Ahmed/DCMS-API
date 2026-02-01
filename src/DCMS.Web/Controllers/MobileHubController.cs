@@ -149,6 +149,41 @@ public class MobileHubController : Controller
     }
 
     /// <summary>
+    /// Diagnostic endpoint to check attachment data for a specific inbound
+    /// </summary>
+    [HttpGet("diagnostic/{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Diagnostic(int id)
+    {
+        try
+        {
+            var inbound = await _context.Inbounds
+                .Include(i => i.Transfers)
+                .Where(i => i.Id == id)
+                .Select(i => new
+                {
+                    i.Id,
+                    i.SubjectNumber,
+                    i.Subject,
+                    i.OriginalAttachmentUrl,
+                    i.AttachmentUrl,
+                    i.ReplyAttachmentUrl,
+                    Transfers = i.Transfers.Select(t => new { t.TransferAttachmentUrl, t.ResponseAttachmentUrl }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (inbound == null)
+                return NotFound(new { message = $"Inbound {id} not found" });
+
+            return Json(inbound);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get all mobile data - for logged in users or anonymous with limited data
     /// </summary>
     [HttpGet]
@@ -190,7 +225,7 @@ public class MobileHubController : Controller
                 i.OriginalAttachmentUrl,
                 i.AttachmentUrl,
                 i.ReplyAttachmentUrl,
-                Transfers = i.Transfers.Select(t => new { t.Engineer.FullName, t.TransferAttachmentUrl }).ToList()
+                Transfers = i.Transfers.Select(t => new { t.Engineer.FullName, t.TransferAttachmentUrl, t.ResponseAttachmentUrl }).ToList()
             })
             .ToListAsync();
 
@@ -200,21 +235,33 @@ public class MobileHubController : Controller
                 ? "\nتحويلات: " + string.Join("، ", transferNames) 
                 : "";
             
-            var attachments = new List<MobileAttachmentDto> { 
-                new MobileAttachmentDto { Title = "المرفق الأصلي", Url = i.OriginalAttachmentUrl ?? i.AttachmentUrl, Type = "original" },
-                new MobileAttachmentDto { Title = "مرفق التأشيرة/التحويل", Url = i.AttachmentUrl, Type = "transfer" },
-                new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" }
-            };
+            var attachments = new List<MobileAttachmentDto>();
             
-            // Add attachments from individual transfers
-            foreach(var t in i.Transfers.Where(t => !string.IsNullOrEmpty(t.TransferAttachmentUrl)))
+            // 1. الأساسيات
+            if (!string.IsNullOrEmpty(i.OriginalAttachmentUrl))
+                attachments.Add(new MobileAttachmentDto { Title = "مرفق الوارد الأصلي", Url = i.OriginalAttachmentUrl, Type = "original" });
+            
+            if (!string.IsNullOrEmpty(i.AttachmentUrl))
+                attachments.Add(new MobileAttachmentDto { Title = "مرفق التأشيرة/التحويل", Url = i.AttachmentUrl, Type = "transfer" });
+            
+            if (!string.IsNullOrEmpty(i.ReplyAttachmentUrl))
+                attachments.Add(new MobileAttachmentDto { Title = "مرفق الرد", Url = i.ReplyAttachmentUrl, Type = "reply" });
+
+            // 2. مرفقات التحويلات والردود عليها (اللي غالباً محمود استخدمها)
+            foreach(var t in i.Transfers)
             {
-                attachments.Add(new MobileAttachmentDto { 
-                    Title = $"مرفق تحويل ({t.FullName})", 
-                    Url = t.TransferAttachmentUrl, 
-                    Type = "transfer" 
-                });
+                if (!string.IsNullOrEmpty(t.TransferAttachmentUrl))
+                    attachments.Add(new MobileAttachmentDto { Title = $"مرفق تحويل ({t.FullName})", Url = t.TransferAttachmentUrl, Type = "transfer" });
+                
+                if (!string.IsNullOrEmpty(t.ResponseAttachmentUrl))
+                    attachments.Add(new MobileAttachmentDto { Title = $"مرفق رد ({t.FullName})", Url = t.ResponseAttachmentUrl, Type = "reply" });
             }
+
+            // تنظيف المكرر (لو نفس الرابط موجود مرتين بنفس الاسم)
+            var finalAttachments = attachments
+                .GroupBy(a => new { a.Url, a.Title })
+                .Select(g => g.First())
+                .ToList();
 
             return new MobileCorrespondenceDto
             {
@@ -228,7 +275,7 @@ public class MobileHubController : Controller
                 Category = "Inbound",
                 CreatedAt = i.CreatedAt,
                 SortDate = i.InboundDate,
-                Attachments = attachments.Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
+                Attachments = finalAttachments
             };
         }).ToList();
 
@@ -271,7 +318,7 @@ public class MobileHubController : Controller
              .Where(a => !string.IsNullOrEmpty(a.Url)).ToList()
         }).ToList();
 
-        // Combine, Sort by actual Date, and Take Top 400 total (200 of each or combined sorted)
+        // Combine, Sort by actual Date, and Take Top 200 total
         var correspondences = inbounds
             .Concat(outbounds)
             .OrderByDescending(c => c.SortDate)
@@ -282,6 +329,10 @@ public class MobileHubController : Controller
         var now = DateTime.UtcNow;
         var startOfYear = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var endOfYear = new DateTime(now.Year, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+        
+        // Calculate Egypt local date for "Today" comparison (UTC+2)
+        var egyptNow = DateTime.UtcNow.AddHours(2);
+        var egyptToday = egyptNow.Date;
         
         var meetings = await _context.Meetings
             .Where(m => m.StartDateTime >= startOfYear && m.StartDateTime <= endOfYear)
@@ -301,7 +352,8 @@ public class MobileHubController : Controller
                 platform = m.IsOnline ? "Online" : "حضوري",
                 isOnline = m.IsOnline,
                 meetingLink = m.OnlineMeetingLink,
-                status = m.StartDateTime.Date == DateTime.UtcNow.Date ? "Today" : "Scheduled"
+                // Compare with Egypt local date for "Today" status
+                status = m.StartDateTime.AddHours(2).Date == egyptToday ? "Today" : "Scheduled"
             })
             .ToListAsync();
 
